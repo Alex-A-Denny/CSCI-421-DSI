@@ -6,7 +6,7 @@ public class Main {
         System.out.println("Hello World!");
         try (Scanner scanner = new Scanner(System.in)) {
             while (true) {
-                String input = scanner.next();
+                String input = scanner.nextLine();
                 System.out.println("Input: " + input);
                 String lower = input.toLowerCase();
                 if (lower.startsWith("create")) {
@@ -15,8 +15,9 @@ public class Main {
 
                 } else if (lower.startsWith("alter")) {
                     
-                } else if (lower.startsWith("insert")) {
-                    
+                } else if (lower.startsWith("insert into")) {
+                    lower = lower.substring(11).strip();
+                    System.out.println(lower);
                 } else if (lower.startsWith("display")) {
                     
                     String nextToken = scanner.next().toLowerCase();
