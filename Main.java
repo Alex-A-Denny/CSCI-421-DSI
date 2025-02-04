@@ -9,8 +9,9 @@ public class Main {
                 String input = scanner.nextLine();
                 System.out.println("Input: " + input);
                 String lower = input.toLowerCase();
-                if (lower.startsWith("create")) {
-
+                if (lower.startsWith("create table")) {
+                    lower = lower.substring(12).strip();
+                    
                 } else if (lower.startsWith("drop")) {
 
                 } else if (lower.startsWith("alter")) {
