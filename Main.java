@@ -12,7 +12,7 @@ public class Main {
             while (scanner.hasNext()) {
                 String input = scanner.next();
 
-                if (input.toLowerCase().equals("quit")){
+                if (input.toLowerCase().equals("quit") && lower.isEmpty()){
                     break;
                 }
                 System.out.println("Input: " + input);
