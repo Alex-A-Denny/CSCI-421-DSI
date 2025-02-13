@@ -9,7 +9,7 @@ Anyone: Select
 
 
 === Catalog Formatting ===
-<TableID>, <Number_of_Attributes>, <Attr_Type>, <Attr_Type>, ...
+<TableID>, <Bytes_to_read>, <Attr_Type>, <Attr_Type>, ...
 
 <Attr_Type> is to be read as an INTEGER. 
 The value of Attr_type corresponds to a record's attribute data type
