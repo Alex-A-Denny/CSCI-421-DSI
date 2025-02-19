@@ -1,40 +1,47 @@
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
+import java.io.*;
+import java.util.HashMap;
+import java.util.Map;
 
 public class Catalog {
-    // Some further catalog info I have in the README.
+    private Map<String, Integer> tableRegistry = new HashMap<>();
+    private Map<String, Schema> tableSchemas = new HashMap<>();
+    private String filename;
 
-    public static void readTableSchema(String tableName) {
-        // Return record schema for given table name
+    public Catalog(String filename) {
+        this.filename = filename;
+    }
 
-        String filePath = "path/to/catalog/"; // TODO: Somehow we need to determine the file path
-        try (FileInputStream fileInputStream = new FileInputStream(filePath);
-                FileChannel fileChannel = fileInputStream.getChannel()) {
-
-            long fileSize = fileChannel.size();
-            ByteBuffer bbuffer = ByteBuffer.allocate((int) fileSize); // Allocate buffer
-
-            fileChannel.read(bbuffer); // Read catalog data into buffer
-            bbuffer.rewind();
-
-            // Process the data from the buffer
-            while (bbuffer.hasRemaining()) {
-                int tableID = bbuffer.get(); // Convert first byte to int, <table_id>
-                int bytes_to_read = bbuffer.get();
-
-                // TODO: Process table schema
-                // Search table for requested ID!
-            }
-
+    public void saveToFile() {
+        try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(filename))) {
+            oos.writeObject(tableRegistry);
+            oos.writeObject(tableSchemas);
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
-    public static void writeTableSchema(String tableName, int[] tableSchema) {
-        // Add new table to catalog
+    @SuppressWarnings("unchecked")
+    public void loadFromFile() {
+        tableRegistry.clear();
+        tableSchemas.clear();
+        try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream(filename))) {
+            tableRegistry = (Map<String, Integer>) ois.readObject();
+            tableSchemas = (Map<String, Schema>) ois.readObject();
+        } catch (IOException | ClassNotFoundException e) {
+            e.printStackTrace();
+        }
     }
 
+    public Integer getTableID(String tableName) {
+        return tableRegistry.getOrDefault(tableName, null);
+    }
+
+    public void addTable(String tableName, int tableID, Schema schema) {
+        tableRegistry.put(tableName, tableID);
+        tableSchemas.put(tableName, schema);
+    }
+
+    public Schema getSchema(String tableName) {
+        return tableSchemas.get(tableName);
+    }
 }
