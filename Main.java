@@ -10,11 +10,13 @@
 
 
 import java.util.Scanner;
+//import DMLParser;
 
 public class Main {
 
+    DMLParser DMLParser = new DMLParser();
     public static void main(String[] args) {
-        System.out.println("Hello World!");
+        
         try (Scanner scanner = new Scanner(System.in)) {
 
             String lower = "";//holds the input string as lowercase

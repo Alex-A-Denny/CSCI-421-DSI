@@ -23,7 +23,9 @@ public class DMLParser {
     }
 
 
-    public createTable parseCreateTable(){
+    public createTable parseCreateTable(String input){
+
+        System.out.println(input);
 
         //will parse user input
         return null;
