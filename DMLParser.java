@@ -25,7 +25,7 @@ public class DMLParser {
 
     public createTable parseCreateTable(){
 
-
+        //will parse user input
         return null;
     }
 }
