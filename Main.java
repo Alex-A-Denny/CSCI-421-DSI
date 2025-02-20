@@ -1,9 +1,22 @@
+//
+// Main.java
+// Initial parsing, sends user input
+// to DDL and DML parsers
+//
+// Author: Alex A Denny
+//
+////////////////////////////////////////
+
+
+
 import java.util.Scanner;
+//import DMLParser;
 
 public class Main {
 
+    DMLParser DMLParser = new DMLParser();
     public static void main(String[] args) {
-        System.out.println("Hello World!");
+        
         try (Scanner scanner = new Scanner(System.in)) {
 
             String lower = "";//holds the input string as lowercase
@@ -12,7 +25,7 @@ public class Main {
             while (scanner.hasNext()) {
                 String input = scanner.next();
 
-                if (input.toLowerCase().equals("quit")){
+                if (input.toLowerCase().equals("quit") && lower.isEmpty()){
                     break;
                 }
                 System.out.println("Input: " + input);
