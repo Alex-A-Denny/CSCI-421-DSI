@@ -12,22 +12,23 @@
 public class DMLParser {
 
 
-    class attribute{
+    class Attribute{
 
     }
 
-    class createTable{
+    static class CreateTable{
         int id;
         String tableName;
 
     }
 
 
-    public createTable parseCreateTable(String input){
+    public static CreateTable parseCreateTable(String input){
 
         System.out.println(input);
-
-        //will parse user input
-        return null;
+        CreateTable ct = new CreateTable();
+        ct.tableName = input;
+        
+        return ct;
     }
 }
