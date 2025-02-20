@@ -12,6 +12,13 @@ public class Main {
                 if (lower.startsWith("create")) {
 
                 } else if (lower.startsWith("drop")) {
+                    String nextToken = scanner.next().toLowerCase();
+                    if (nextToken.startsWith("table")) {
+                        String tableName = scanner.next();
+                        System.out.println("input "+ tableName);
+                    } else {
+                        System.out.println("Invalid input, Usage: 'drop table <name>'");
+                    }
 
                 } else if (lower.startsWith("alter")) {
                     
