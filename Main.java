@@ -28,6 +28,7 @@ public class Main {
                             //send to DDLParser
                             System.out.println("DDLParser");
                             lower = "";
+
                     }            
                     
                     if(lower.startsWith("insert") ||  
