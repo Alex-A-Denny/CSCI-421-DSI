@@ -1,3 +1,14 @@
+//
+// Main.java
+// Initial parsing, sends user input
+// to DDL and DML parsers
+//
+// Author: Alex A Denny
+//
+////////////////////////////////////////
+
+
+
 import java.util.Scanner;
 
 public class Main {
