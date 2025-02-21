@@ -14,34 +14,33 @@ import java.util.Scanner;
 
 public class Main {
 
-    DMLParser DMLParser = new DMLParser();
-    public static void main(String[] args) {
-        
-        try (Scanner scanner = new Scanner(System.in)) {
-
-            String lower = "";//holds the input string as lowercase
-                              //for the parsers
-
-            while (scanner.hasNext()) {
-                String input = scanner.next();
-
-                if (input.toLowerCase().equals("quit") && lower.isEmpty()){
-                    break;
-                }
-                System.out.println("Input: " + input);
-                lower = lower.concat(input.toLowerCase() + " ");
-                System.out.println("LOWER: " + lower);
-                
-                if(lower.strip().endsWith(";")){      //sending user
-                                                             //input to parsers  
-                    if(lower.startsWith("create") ||  
-                        lower.startsWith("drop") || 
-                        lower.startsWith("alter")){
-
-                            //send to DDLParser
-                            System.out.println("DDLParser");
-                            lower = "";
-
+    static DMLParser DML = new DMLParser();
+    static DDLParser DDL = new DDLParser();
+        public static void main(String[] args) {
+            
+            try (Scanner scanner = new Scanner(System.in)) {
+    
+                String lower = "";//holds the input string as lowercase
+                                  //for the parsers
+    
+                while (scanner.hasNext()) {
+                    String input = scanner.next();
+    
+                    if (input.toLowerCase().equals("quit") && lower.isEmpty()){
+                        break;
+                    }
+                    //System.out.println("Input: " + input);
+                    lower = lower.concat(input.toLowerCase() + " ");
+                    //System.out.println("LOWER: " + lower);
+                    
+                    if(lower.strip().endsWith(";")){      //sending user
+                                                                 //input to parsers  
+                        if(lower.startsWith("create") ||  
+                            lower.startsWith("drop") || 
+                            lower.startsWith("alter")){
+                                //send to DDLParser
+                                DMLParser.parseCreateTable(lower);
+                                lower = "";
                     }            
                     
                     if(lower.startsWith("insert") ||  
