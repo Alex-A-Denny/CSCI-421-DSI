@@ -54,8 +54,6 @@ public class DMLParser {
 
 /**
      * Parses and executes an "INSERT INTO" statement.
-     * Example:
-     * INSERT INTO students VALUES (1, "Alice", true, 3.8);
      * @param input The raw SQL command.
      */
     public void parseInsert(String input) {
@@ -104,8 +102,6 @@ public class DMLParser {
 
     /**
      * Parses and executes a "SELECT * FROM" statement.
-     * Example:
-     * SELECT * FROM students;
      * @param input The raw SQL command.
      */
     public void parseSelect(String input) {
