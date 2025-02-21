@@ -39,7 +39,7 @@ public class Main {
                             lower.startsWith("drop") || 
                             lower.startsWith("alter")){
                                 //send to DDLParser
-                                DMLParser.parseCreateTable(lower);
+                                DDL.parseCreateTable(lower);
                                 lower = "";
                     }            
                     
