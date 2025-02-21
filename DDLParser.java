@@ -1,12 +1,21 @@
+import catalog.Catalog;
+import storage.StorageManager;
+
 public class DDLParser {
     //takes in a string
 
-    private static Catalog catalog = new Catalog("Catalog.py");
+    private Catalog catalog;
+    private StorageManager storageManager;
+
+    public DDLParser(Catalog catalog, StorageManager storageManager) {
+        this.catalog = catalog;
+        this.storageManager = storageManager;
+    }
 
     /*
     Handle "DROP TABLE tableName;"
     */
-    public static void parseDropTable(String input) {
+    public void parseDropTable(String input) {
         // remove semicolon
        input =input.trim();
         if (input.endsWith(";")) {
@@ -23,15 +32,17 @@ public class DDLParser {
         String tableName = tokens[2];
 
         // Lookup table ID in Catalog
-        Integer tableID = catalog.getTableID(tableName);
+        Integer tableID = catalog.getTable(tableName);
         if (tableID == null) {
             System.err.println("Error: Table '" + tableName + "' does not exist");
             return;
         }
 
-        // Remove table from Catalog
-        catalog.removeTable(tableID);
-
-        System.out.println("Table '" + tableName + "' dropped successfully.");
+        // Drop the table
+        if (storageManager.dropTable(tableID)) {
+            System.out.println("Table '" + tableName + "' dropped successfully.");
+        } else {
+            System.err.println("Unable to drop table: '" + tableName + "'");
+        }
     }
 }

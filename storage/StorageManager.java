@@ -333,7 +333,6 @@ public class StorageManager {
             newPage.buf.rewind();
         }
 
-        catalog.deleteTable(tableId);
         catalog.changeTableId(tableId, id);
         catalog.renameTable(id, oldName);
         for (int pageId : pages) {
@@ -403,7 +402,6 @@ public class StorageManager {
             newPage.buf.rewind();
         }
 
-        catalog.deleteTable(tableId);
         catalog.changeTableId(tableId, id);
         catalog.renameTable(id, oldName);
         for (int pageId : pages) {

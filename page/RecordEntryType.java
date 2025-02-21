@@ -8,6 +8,8 @@ public enum RecordEntryType {
     CHAR_VAR,
     ;
 
+    public static final RecordEntryType[] VALUES = values();
+
     public int size() {
         return switch (this) {
             case INT -> Integer.BYTES;

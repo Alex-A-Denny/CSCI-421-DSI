@@ -1,30 +1,41 @@
 package catalog;
 
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import page.RecordCodec;
+import table.TableSchema;
+
+// Author: Sam Ellis, Spencer Warren
 
 public class Catalog {
 
     private final Map<Integer, String> tables = new HashMap<>();
+    private final Map<String, Integer> tableNames = new HashMap<>();
     private final Map<Integer, RecordCodec> codecs = new HashMap<>();
     private final Map<Integer, List<Integer>> pages = new HashMap<>();
+    private final int pageSize;
     private int tableCounter = 0;
     private int pageCounter = 0;
 
-    public boolean tableExists(String name) {
-        return tables.values().contains(name);
+    public Catalog(int pageSize) {
+        this.pageSize = pageSize;
+    }
+
+    public Integer getTable(String name) {
+        return tableNames.get(name);
     }
 
     public int createTable(String name, RecordCodec codec) {
-        if (tables.values().contains(name)) {
+        if (tableNames.containsKey(name)) {
             throw new IllegalArgumentException("Table already exists: " + name);
         }
         int id = tableCounter++;
         tables.put(id, name);
+        tableNames.put(name, id);
         codecs.put(id, codec);
         return id;
     }
@@ -41,7 +52,6 @@ public class Catalog {
         } else {
             list.add(sortingIndex, id);
         }
-        // TODO write the new page association to disk
         return id;
     }
 
@@ -58,19 +68,101 @@ public class Catalog {
     }
 
     public void deleteTable(int tableId) {
+        tableNames.remove(tables.get(tableId));
         tables.remove(tableId);
         codecs.remove(tableId);
         pages.remove(tableId);
     }
 
     public void changeTableId(int oldId, int newId) {
-        tables.put(oldId, tables.get(newId));
-        codecs.put(oldId, codecs.get(newId));
-        pages.put(oldId, pages.get(newId));
-        deleteTable(newId);
+        tableNames.put(tables.get(oldId), newId);
+        tables.put(newId, tables.get(oldId));
+        codecs.put(newId, codecs.get(oldId));
+        pages.put(newId, pages.get(oldId));
+        deleteTable(oldId);
     }
 
     public void renameTable(int id, String name) {
         tables.put(id, name);
+    }
+
+    public ByteBuffer encode() {
+        int size = 0;
+        size += 4; // page size
+        size += 4; // table id counter
+        size += 4; // page id counter
+        size += 4; // table count
+        size += tables.size() * 4; // table ids
+        // table names
+        for (String s : tableNames.keySet()) {
+            size += 4; // string length
+            size += s.getBytes().length; // string value
+        }
+        // codecs
+        Map<Integer, ByteBuffer> encodedCodecs = new HashMap<>();
+        for (var entry : codecs.entrySet()) {
+            ByteBuffer encoded = entry.getValue().schema.encode();
+            encoded.rewind();
+            encodedCodecs.put(entry.getKey(), encoded);
+            size += encoded.capacity();
+        }
+        // pages
+        Map<Integer, ByteBuffer> encodedPages = new HashMap<>();
+        for (var entry : pages.entrySet()) {
+            var list = entry.getValue();
+            ByteBuffer encoded = ByteBuffer.allocate(list.size() * 4 + 4);
+            encoded.putInt(list.size());
+            for (int pageId : list) {
+                encoded.putInt(pageId);
+            }
+            encoded.rewind();
+            encodedPages.put(entry.getKey(), encoded);
+            size += encoded.capacity();
+        }
+
+        ByteBuffer buf = ByteBuffer.allocate(size);
+        buf.putInt(pageSize);
+        buf.putInt(tableCounter);
+        buf.putInt(pageCounter);
+        buf.putInt(tables.size());
+        for (int tableId : tables.keySet()) {
+            buf.putInt(tableId);
+            String tableName = tables.get(tableId);
+            buf.putInt(tableName.length());
+            buf.put(tableName.getBytes());
+            buf.put(encodedCodecs.get(tableId));
+            buf.put(encodedPages.get(tableId));
+        }
+
+        if (buf.position() != buf.capacity()) {
+            throw new IllegalStateException("Unable to fully encode catalog");
+        }
+        return buf;
+    }
+
+    public static Catalog decode(ByteBuffer buf) {
+        buf.rewind();
+        int pageSize = buf.getInt();
+        Catalog catalog = new Catalog(pageSize);
+        catalog.tableCounter = buf.getInt();
+        catalog.pageCounter = buf.getInt();
+        int tableCount = buf.getInt();
+        for (int i = 0; i < tableCount; i++) {
+            int tableId = buf.getInt();
+            byte[] arr = new byte[buf.getInt()];
+            buf.get(arr);
+            String tableName = new String(arr);
+            RecordCodec codec = new RecordCodec(TableSchema.decode(buf));
+            int pageCount = buf.getInt();
+            List<Integer> pages = new ArrayList<>(pageCount);
+            for (int j = 0; j < pageCount; j++) {
+                pages.add(buf.getInt());
+            }
+            catalog.tables.put(tableId, tableName);
+            catalog.tableNames.put(tableName, tableId);
+            catalog.codecs.put(tableId, codec);
+            catalog.pages.put(tableId, pages);
+        }
+        return catalog;
     }
 }
