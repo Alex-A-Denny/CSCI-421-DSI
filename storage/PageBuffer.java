@@ -14,12 +14,12 @@ import page.Page;
 public class PageBuffer {
 
     private final Path pagesDir;
-    private final int pageSize;
+    public final int pageSize;
 
     private final int capacity;
 
     private final Map<Integer, Page> map;
-    private final ArrayDeque<Page> queue;
+    private final ArrayDeque<Integer> queue;
 
     public PageBuffer(Path dbPath, int pageSize, int capacity) {
         this.pagesDir = dbPath.resolve("pages");
@@ -33,19 +33,18 @@ public class PageBuffer {
         Page page = map.get(pageId);
         if (page == null) {
             page = readOrCreatePage(pageId);
-        }
-        if (queue.size() == capacity) {
-            Page ejected = queue.removeFirst();
-            map.remove(ejected.id);
-            write(ejected);
+            map.put(pageId, page);
+            if (queue.size() == capacity) {
+                int removedId = queue.removeFirst();
+                Page removed = map.remove(removedId);
+                write(removed);
+            }
+            queue.addLast(pageId);
         } else {
-            queue.remove(page);
-            queue.addLast(page);
+            queue.remove(pageId);
+            queue.addLast(pageId);
         }
 
-        if (!map.containsKey(pageId)) {
-            map.put(page.id, page);
-        }
         return page;
     }
 
@@ -80,13 +79,12 @@ public class PageBuffer {
 
     public void write(int pageId) throws IOException {
         Page page = map.get(pageId);
+        queue.remove(pageId);
+        queue.addLast(pageId);
         write(page);
     }
 
     private void write(Page page) throws IOException {
-        queue.remove(page);
-        queue.addLast(page);
-
         if (!Files.exists(pagesDir)) {
             Files.createDirectories(pagesDir);
         }
@@ -94,6 +92,18 @@ public class PageBuffer {
         Path pagePath = pagesDir.resolve(String.valueOf(page.id));
         try (RandomAccessFile file = new RandomAccessFile(pagePath.toString(), "rw")) {
             file.write(page.buf.array());
+        }
+    }
+
+    public void delete(int pageId) throws IOException {
+        if (map.containsKey(pageId)) {
+            map.remove(pageId);
+            queue.remove(pageId);
+        }
+
+        Path pagePath = pagesDir.resolve(String.valueOf(pageId));
+        if (Files.exists(pagePath)) {
+            Files.delete(pagePath);
         }
     }
 }
