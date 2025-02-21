@@ -9,17 +9,30 @@
 
 
 
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Scanner;
 //import DMLParser;
 
+import catalog.Catalog;
+import page.RecordCodec;
+import page.RecordEntry;
+import page.RecordEntryType;
+import storage.PageBuffer;
+import storage.StorageManager;
+import table.TableSchema;
+
 public class Main {
 
-    static DMLParser DML = new DMLParser();
-    static DDLParser DDL = new DDLParser();
         public static void main(String[] args) {
-            
             try (Scanner scanner = new Scanner(System.in)) {
-    
+                //DDLParser DDL = new DDLParser();
+
                 String lower = "";//holds the input string as lowercase
                                   //for the parsers
     
@@ -39,7 +52,7 @@ public class Main {
                             lower.startsWith("drop") || 
                             lower.startsWith("alter")){
                                 //send to DDLParser
-                                DDL.parseCreateTable(lower);
+                                //DDL.parseCreateTable(lower);
                                 lower = "";
                     }            
                     
