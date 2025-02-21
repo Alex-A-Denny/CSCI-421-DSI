@@ -1,3 +1,4 @@
+
 //
 // DMLParser.java
 // Parses user commands for insert,
@@ -7,9 +8,21 @@
 //
 ////////////////////////////////////////
 
-
+import catalog.Catalog;
+import java.util.ArrayList;
+import java.util.List;
+import page.RecordEntry;
+import storage.StorageManager;
 
 public class DMLParser {
+
+    private final StorageManager storageManager;
+    private final Catalog catalog;
+
+    public DMLParser(StorageManager storageManager) {
+        this.storageManager = storageManager;
+        this.catalog = storageManager.catalog;
+    }
 
 
     class Attribute{
@@ -39,56 +52,74 @@ public class DMLParser {
         ct.tableName = input;
     }
 
-    // Parses an INSERT statement
-    public static void parseInsert(String input) {
-        System.out.println("Parsing: " + input);
+/**
+     * Parses and executes an "INSERT INTO" statement.
+     * Example:
+     * INSERT INTO students VALUES (1, "Alice", true, 3.8);
+     * @param input The raw SQL command.
+     */
+    public void parseInsert(String input) {
+        input = input.trim().toLowerCase();
+        if (!input.startsWith("insert into") || !input.contains("values")) {
+            return;
+        }
 
-        // Split the statement into table name and values
+        // Extract table name and values
         String[] parts = input.split("values");
         if (parts.length != 2) {
-            System.out.println("Error: Malformed INSERT statement.");
             return;
         }
 
-        // Extract table name
         String tableName = parts[0].replace("insert into", "").trim();
-        String valuesPart = parts[1].trim();
-
-        if (!valuesPart.startsWith("(") || !valuesPart.endsWith(")")) {
-            System.out.println("Error: Values must be enclosed in parentheses.");
+        Integer tableId = catalog.getTable(tableName);
+        if (tableId == null) {
             return;
         }
 
-        // Remove parentheses and split values by commas
+        String valuesPart = parts[1].trim();
+        if (!valuesPart.startsWith("(") || !valuesPart.endsWith(")")) {
+            return;
+        }
+
         valuesPart = valuesPart.substring(1, valuesPart.length() - 1).trim();
-        String[] values = valuesPart.split("\\s*,\\s*"); 
+        String[] values = valuesPart.split("\\s*,\\s*");
 
-        InsertRecord record = new InsertRecord();
-        record.tableName = tableName;
-        record.values = values;
+        // Convert values into a RecordEntry
+        List<Object> recordValues = new ArrayList<>();
+        for (String value : values) {
+            if (value.matches("-?\\d+")) { 
+                recordValues.add(Integer.parseInt(value));
+            } else if (value.matches("-?\\d+\\.\\d+")) { 
+                recordValues.add(Double.parseDouble(value));
+            } else if (value.equalsIgnoreCase("true") || value.equalsIgnoreCase("false")) { 
+                recordValues.add(Boolean.parseBoolean(value));
+            } else { 
+                recordValues.add(value.replace("\"", ""));
+            }
+        }
 
-        System.out.println("Table: " + record.tableName);
-        System.out.println("Values: " + String.join(", ", record.values));
-
-        // StorageManager.insertRecord(record.tableName, record.values);
+        RecordEntry record = new RecordEntry(recordValues);
+        storageManager.insertRecord(tableId, record);
     }
 
-    // Parses a SELECT statement
-    public static void parseSelect(String input) {
-        System.out.println("Parsing: " + input);
-
-        // Extract table name
-        String tableName = input.replace("select * from", "").trim();
-        if (tableName.isEmpty()) {
-            System.out.println("Error: Missing table name.");
+    /**
+     * Parses and executes a "SELECT * FROM" statement.
+     * Example:
+     * SELECT * FROM students;
+     * @param input The raw SQL command.
+     */
+    public void parseSelect(String input) {
+        input = input.trim().toLowerCase();
+        if (!input.startsWith("select * from")) {
             return;
         }
 
-        SelectQuery query = new SelectQuery();
-        query.tableName = tableName;
+        String tableName = input.replace("select * from", "").trim();
+        Integer tableId = catalog.getTable(tableName);
+        if (tableId == null) {
+            return;
+        }
 
-        System.out.println("Selecting all records from table: " + query.tableName);
-
-        // StorageManager.selectRecords(query.tableName);
+        storageManager.findRecords(tableId, record -> true);
     }
 }
