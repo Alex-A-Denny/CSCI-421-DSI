@@ -25,15 +25,15 @@ public class DMLParser {
     }
 
 
-    class Attribute{
+    // class Attribute{
 
-    }
+    // }
 
-    static class CreateTable{
-        int id;
-        String tableName;
+    // static class CreateTable{
+    //     int id;
+    //     String tableName;
 
-    }
+    // }
 
     static class InsertRecord {
         String tableName;
@@ -45,12 +45,12 @@ public class DMLParser {
     }
 
 
-    public static void parseCreateTable(String input){
+    // public static void parseCreateTable(String input){
 
-        System.out.println(input);
-        CreateTable ct = new CreateTable();
-        ct.tableName = input;
-    }
+    //    System.out.println(input);
+    //    CreateTable ct = new CreateTable();
+    //    ct.tableName = input;
+    //}
 
 /**
      * Parses and executes an "INSERT INTO" statement.

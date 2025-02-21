@@ -31,7 +31,8 @@ public class Main {
 
         public static void main(String[] args) {
             try (Scanner scanner = new Scanner(System.in)) {
-    
+                //DDLParser DDL = new DDLParser();
+
                 String lower = "";//holds the input string as lowercase
                                   //for the parsers
     
@@ -51,7 +52,7 @@ public class Main {
                             lower.startsWith("drop") || 
                             lower.startsWith("alter")){
                                 //send to DDLParser
-                                DMLParser.parseCreateTable(lower);
+                                //DDL.parseCreateTable(lower);
                                 lower = "";
                     }            
                     
