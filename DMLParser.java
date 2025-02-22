@@ -223,7 +223,7 @@ public class DMLParser {
             }
             for (int i = 0; i < schema.types.size(); i++) {
                 if (!schema.types.get(i).matchesType(recordValues.get(i))) {
-                    System.err.println("Error: value '" + recordValues.get(i) + "' has wrong type: " + recordValues.get(i).getClass().getSimpleName() + ". Need: " + schema.types.get(i).name());
+                    System.err.println("Error: value '" + recordValues.get(i) + "' has wrong type: " + recordValues.get(i).getClass().getSimpleName() + ". Need: " + schema.types.get(i).displayStringSimple());
                     return;
                 }
             }

@@ -220,7 +220,11 @@ public class TableSchema {
             inner += nullables.get(i) ? "" : "notnull ";
             inner += uniques.get(i) ? "unique" : "";
             inner.trim();
-            String s = String.format("%s: %s %s", names.get(i), types.get(i), inner);
+            String type = types.get(i).displayString();
+            if (types.get(i) == RecordEntryType.CHAR_FIXED || types.get(i) == RecordEntryType.CHAR_VAR) {
+                type = String.format(type, sizes.get(i) / Character.BYTES);
+            }
+            String s = String.format("%s: %s %s", names.get(i), type, inner);
             list.add(s);
         }
         return String.join("\n", list);

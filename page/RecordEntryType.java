@@ -74,4 +74,24 @@ public enum RecordEntryType {
             }
         };
     }
+
+    public String displayString() {
+        return switch (this) {
+            case INT -> "integer";
+            case DOUBLE -> "double";
+            case BOOL -> "boolean";
+            case CHAR_FIXED -> "char(%d)";
+            case CHAR_VAR -> "varchar(%d)";
+        };
+    }
+
+    public String displayStringSimple() {
+        return switch (this) {
+            case INT -> "integer";
+            case DOUBLE -> "double";
+            case BOOL -> "boolean";
+            case CHAR_FIXED -> "char";
+            case CHAR_VAR -> "varchar";
+        };
+    }
 }
