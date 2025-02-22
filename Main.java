@@ -106,27 +106,45 @@ public class Main {
                 lower = lower.concat(input.toLowerCase() + " ");
                 //System.out.println("LOWER: " + lower);
                 
-                if(lower.strip().endsWith(";")){      //sending user
-                                                                //input to parsers  
-                    if(lower.startsWith("create") ||  
-                        lower.startsWith("drop") || 
-                        lower.startsWith("alter")){
-                            //send to DDLParser
-                            // ddl.parseCreateTable(lower);
-                            lower = "";
-                    }            
-                    
-                    if(lower.startsWith("insert") ||  
-                        lower.startsWith("display") || 
-                        lower.startsWith("select")){
-
-                            //send to DMLParser
-                            System.out.println("DMLParser");
-                            lower = "";
-
-                    }   
+                if(lower.strip().endsWith(";")){
+                    lower = lower.substring(0, lower.indexOf(";")).trim();
+                    //sending user input to parsers  
+                    if (lower.startsWith("create")) {
+                        dml.parseCreateTable(lower);
+                    } else if (lower.startsWith("drop")) {
+                        ddl.parseDropTable(lower);
+                    } else if (lower.startsWith("alter")) {
+                        ddl.parseAlterTable(lower);
+                    } else if (lower.startsWith("insert")) {
+                        dml.parseInsert(lower);
+                    } else if (lower.startsWith("display")) {
+                        // TODO impl
+                    } else if (lower.startsWith("select")) {
+                        dml.parseSelect(lower); // TODO this will later need to be non-lower
+                    }
+                    lower = "";
+                    input = "";
                 }
             }
+        }
+
+        // write everything to the disk before exit
+        ByteBuffer encodedCatalog = catalog.encode();
+        try {
+            Files.write(catalogPath, encodedCatalog.array());
+        } catch (IOException e) {
+            System.err.println("Unable to write catalog");
+            e.printStackTrace();
+            System.exit(1);
+            return;
+        }
+        try {
+            pageBuffer.purge();
+        } catch (IOException e) {
+            System.err.println("Unable to purge page buffer");
+            e.printStackTrace();
+            System.exit(1);
+            return;
         }
     }
 }

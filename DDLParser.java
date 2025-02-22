@@ -83,12 +83,20 @@ public class DDLParser {
         }
     }
 
-    public void parseAlterTable(String input, String lower) {
-        // input is everything after the ALTER TABLE with leading and trailing whitespace trimmed, no semicolon
-        int index = lower.indexOf(' ');
+    public void parseAlterTable(String lower) {
+        int index = lower.indexOf("alter table");
+        if (index < 0) {
+            System.err.println("Error: ALTER TABLE not at the start");
+            return;
+        }
+        lower = lower.substring(index + "alter table".length()).trim();
+        index = lower.indexOf(' ');
         if (index < 0) {
             System.err.println("Error: ALTER TABLE must specify a table name");
             return;
+        }
+        if (lower.endsWith(";")) {
+            lower = lower.substring(0, lower.indexOf(";")).trim();
         }
 
         String tableName = lower.substring(0, index);
@@ -99,7 +107,6 @@ public class DDLParser {
         }
 
         lower = lower.substring(index + 1).trim();
-        input = input.substring(index + 1).trim();
 
         index = lower.indexOf(' ');
         if (index < 0) {
@@ -108,7 +115,6 @@ public class DDLParser {
         }
         String op = lower.substring(0, index);
         lower = lower.substring(index + 1).trim();
-        input = input.substring(index + 1).trim();
 
         TableSchema schema = catalog.getCodec(tableId).schema;
         if ("drop".equals(op)) {
@@ -132,7 +138,6 @@ public class DDLParser {
             }
 
             lower = lower.substring(index + 1).trim();
-            input = input.substring(index + 1).trim();
 
             index = lower.indexOf(' ');
             String typeName;
@@ -143,7 +148,6 @@ public class DDLParser {
                 // default value
                 typeName = lower.substring(0, index);
                 lower = lower.substring(index + 1).trim();
-                input = input.substring(index + 1).trim();
             }
             RecordEntryType type;
             int typeSize = -1;
@@ -194,13 +198,12 @@ public class DDLParser {
                     return;
                 }
 
-                input = input.substring(index + "default".length()).trim();
                 lower = lower.substring(index + "default".length()).trim();
                 Object defaultValue;
                 if ("null".equals(lower)) {
                     defaultValue = null;
                 } else {
-                    defaultValue = type.parse(input, typeSize);
+                    defaultValue = type.parse(lower, typeSize);
                     if (defaultValue == null) {
                         return;
                     }

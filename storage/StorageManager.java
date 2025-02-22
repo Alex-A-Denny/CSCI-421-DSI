@@ -303,8 +303,12 @@ public class StorageManager {
         schema.nullables.add(true);
         RecordCodec codec = new RecordCodec(schema);
 
-        int id = catalog.createTable(oldName + "_alter_add_tmp", codec);
         List<Integer> pages = catalog.getPages(tableId);
+        if (pages == null) {
+            return true;
+        }
+
+        int id = catalog.createTable(oldName + "_alter_add_tmp", codec);
         for (int pageId : pages) {
             Page page = getPage(pageId);
             if (page == null) {
@@ -366,10 +370,12 @@ public class StorageManager {
         }
 
         TableSchema schema = oldCodec.schema.copy();
+        schema.names.remove(colIndex);
         schema.types.remove(colIndex);
         schema.sizes.remove(colIndex);
         schema.uniques.remove(colIndex);
         schema.nullables.remove(colIndex);
+        schema.defaultValues.remove(colIndex);
         RecordCodec codec = new RecordCodec(schema);
 
         int id = catalog.createTable(oldName + "_alter_add_tmp", codec);

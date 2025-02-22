@@ -195,10 +195,7 @@ public class DMLParser {
         Integer tableId = catalog.getTable(tableName);
         if (tableId == null) return;
 
-        TableSchema schema = catalog.getCodec(tableId).schema;
         List<RecordEntry> records = storageManager.findRecords(tableId, r -> true);
-
-        System.out.println(String.join("\t", schema.types.toString()));
 
         for (RecordEntry record : records) {
             System.out.println(record.data); 
