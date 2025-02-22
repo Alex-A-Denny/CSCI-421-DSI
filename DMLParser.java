@@ -261,13 +261,11 @@ public class DMLParser {
             System.out.println("Tables:");
             for ( Integer tableId : catalog.getTables().keySet()) {
                 System.out.println("Table name: " + catalog.getTableName(tableId));
-                System.out.println("Table schema: " + catalog.getCodec(tableId).schema);
-                System.out.println("Pages: " + catalog.getPages(tableId).size());
-                System.out.println("Records: " + catalog.getPages(tableId).size());
                 System.out.println("Table schema:\n" + catalog.getCodec(tableId).schema);
                 var pages = catalog.getPages(tableId);
                 System.out.println("Pages: " + (pages == null ? 0 : pages.size()));
                 System.out.println("Records: " + storageManager.findRecords(tableId, (o) -> true).size());
+                System.out.println("");
             }
         } else if (input.toLowerCase().startsWith("display info")) {
             String tableName = input.substring(input.indexOf("display info") + "display info".length()).trim();
