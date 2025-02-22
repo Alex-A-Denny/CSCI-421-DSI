@@ -79,6 +79,7 @@ public class Main {
             ByteBuffer buf = ByteBuffer.wrap(raw);
             buf.rewind();
             catalog = Catalog.decode(buf);
+            pageSize = catalog.getPageSize();
         } else {
             catalog = new Catalog(pageSize);
         }

@@ -239,7 +239,6 @@ public class DMLParser {
             RecordEntry record = new RecordEntry(recordValues);
             boolean result = storageManager.insertRecord(tableId, record);
             if (!result) {
-                System.err.println("Error: storage issue during insert");
                 return;
             }
         }
@@ -255,6 +254,10 @@ public class DMLParser {
             System.out.println("Buffer Size: " + storageManager.pageBuffer.getCapacity());
             System.out.println();
 
+            if (catalog.getTables().isEmpty()) {
+                System.out.println("No tables to display");
+                return;
+            }
             System.out.println("Tables:");
             for ( Integer tableId : catalog.getTables().keySet()) {
                 System.out.println("Table name: " + catalog.getTableName(tableId));
@@ -262,7 +265,9 @@ public class DMLParser {
                 System.out.println("Pages: " + catalog.getPages(tableId).size());
                 System.out.println("Records: " + catalog.getPages(tableId).size());
                 System.out.println("Table schema:\n" + catalog.getCodec(tableId).schema);
-                System.out.println("");
+                var pages = catalog.getPages(tableId);
+                System.out.println("Pages: " + (pages == null ? 0 : pages.size()));
+                System.out.println("Records: " + storageManager.findRecords(tableId, (o) -> true).size());
             }
         } else if (input.toLowerCase().startsWith("display info")) {
             String tableName = input.substring(input.indexOf("display info") + "display info".length()).trim();
@@ -273,7 +278,9 @@ public class DMLParser {
             }
             System.out.println("Table name: " + catalog.getTableName(tableId));
             System.out.println("Table schema:\n" + catalog.getCodec(tableId).schema);
-            System.out.println("");
+            var pages = catalog.getPages(tableId);
+            System.out.println("Pages: " + (pages == null ? 0 : pages.size()));
+            System.out.println("Records: " + storageManager.findRecords(tableId, (o) -> true).size());
         }
         
     }
