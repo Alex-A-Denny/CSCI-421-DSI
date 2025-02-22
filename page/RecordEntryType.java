@@ -60,7 +60,7 @@ public enum RecordEntryType {
                 if (value.getBytes().length <= size) {
                     yield value;
                 } else {
-                    System.err.println("Fixed length string '" + value + "' of length " + value.length() + " exceeds max size of " + (size / Character.BYTES));
+                    System.err.println("Error: Fixed length string '" + value + "' of length " + value.length() + " exceeds max size of " + (size / Character.BYTES));
                     yield null;
                 }
             }
@@ -68,7 +68,7 @@ public enum RecordEntryType {
                 if (value.getBytes().length <= size) {
                     yield value;
                 } else {
-                    System.err.println("Variable length string '" + value + "' of length " + value.length() + " exceeds max size of " + (size / Character.BYTES));
+                    System.err.println("Error: Variable length string '" + value + "' of length " + value.length() + " exceeds max size of " + (size / Character.BYTES));
                     yield null;
                 }
             }
