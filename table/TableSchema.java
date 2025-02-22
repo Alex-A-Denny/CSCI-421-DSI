@@ -10,6 +10,7 @@ import page.RecordEntryType;
 public class TableSchema {
     public static final int MAX_COLUMNS = 32; // null bitmask is 4 bytes so we can't support more cols than that
 
+    public final List<String> names;
     public final List<RecordEntryType> types;
     public final List<Integer> sizes;
     public final List<Object> defaultValues;
@@ -18,19 +19,21 @@ public class TableSchema {
     public final int primaryKeyIndex;
 
     /**
-     * @param types the data types for the codec
+     * @param names the column names for the table
+     * @param types the data types
      * @param sizes the length of each value, use values < 0 for non string types
      * @param defaultValues the default values for each column
      * @param uniques the columns which must be unique
      * @param nullables the columns which can be null
      * @param primaryKeyIndex the index of the primary key
      */
-    public TableSchema(List<RecordEntryType> types, List<Integer> sizes, List<Object> defaultValues, List<Boolean> uniques, List<Boolean> nullables, int primaryKeyIndex) {
-        this(types, sizes, defaultValues, uniques, nullables, primaryKeyIndex, true); 
+    public TableSchema(List<String> names, List<RecordEntryType> types, List<Integer> sizes, List<Object> defaultValues, List<Boolean> uniques, List<Boolean> nullables, int primaryKeyIndex) {
+        this(names, types, sizes, defaultValues, uniques, nullables, primaryKeyIndex, true); 
     }
 
     /**
-     * @param types the data types for the codec
+     * @param names the column names for the table
+     * @param types the data types
      * @param sizes the length of each value, use values < 0 for non string types
      * @param defaultValues the default values for each column
      * @param uniques the columns which must be unique
@@ -38,7 +41,8 @@ public class TableSchema {
      * @param primaryKeyIndex the index of the primary key
      * @param computeSizes if sizes should be computed
      */
-    public TableSchema(List<RecordEntryType> types, List<Integer> sizes, List<Object> defaultValues, List<Boolean> uniques, List<Boolean> nullables, int primaryKeyIndex, boolean computeSizes) {
+    public TableSchema(List<String> names, List<RecordEntryType> types, List<Integer> sizes, List<Object> defaultValues, List<Boolean> uniques, List<Boolean> nullables, int primaryKeyIndex, boolean computeSizes) {
+        this.names = names;
         this.types = types;
         this.sizes = sizes;
         this.defaultValues = defaultValues;
@@ -73,7 +77,7 @@ public class TableSchema {
     }
 
     public TableSchema copy() {
-        return new TableSchema(new ArrayList<>(types), new ArrayList<>(sizes), new ArrayList<>(defaultValues), new ArrayList<>(uniques), new ArrayList<>(nullables), primaryKeyIndex, false);
+        return new TableSchema(new ArrayList<>(names), new ArrayList<>(types), new ArrayList<>(sizes), new ArrayList<>(defaultValues), new ArrayList<>(uniques), new ArrayList<>(nullables), primaryKeyIndex, false);
     }
 
     public ByteBuffer encode() {
@@ -83,6 +87,10 @@ public class TableSchema {
         size += uniques.size(); // 1 byte per unique value
         size += nullables.size(); // 1 byte per null value
         size += 1; // 1 byte for the primary key index
+        for (int i = 0; i < names.size(); i++) {
+            size += 4; // length of name
+            size += names.get(i).getBytes().length;
+        }
         for (int i = 0; i < defaultValues.size(); i++) {
             size += 1; // 1 byte for if the value is null
             if (defaultValues.get(i) == null) {
@@ -100,6 +108,9 @@ public class TableSchema {
         ByteBuffer buf = ByteBuffer.allocate(size);
         buf.put((byte) types.size());
         for (int i = 0; i < types.size(); i++) {
+            byte[] arr = names.get(i).getBytes();
+            buf.putInt(arr.length);
+            buf.put(arr);
             buf.put((byte) types.get(i).ordinal());
             buf.put((byte) sizes.get(i).intValue());
             buf.put((byte) (uniques.get(i) ? 1 : 0));
@@ -117,12 +128,12 @@ public class TableSchema {
                     buf.put((byte) (b ? 1 : 0));
                 } else if (defaultValue instanceof String s) {
                     if (types.get(i) == RecordEntryType.CHAR_FIXED) {
-                        byte[] arr = s.getBytes();
+                        arr = s.getBytes();
                         // ensure the array is the entire size for fixed length
                         arr = Arrays.copyOf(arr, sizes.get(i));
                         buf.put(arr);
                     } else if (types.get(i) == RecordEntryType.CHAR_VAR) {
-                        byte[] arr = s.getBytes();
+                        arr = s.getBytes();
                         buf.putInt(arr.length);
                         buf.put(arr);
                     } else {
@@ -139,12 +150,16 @@ public class TableSchema {
 
     public static TableSchema decode(ByteBuffer buf) {
         int count = buf.get();
+        List<String> names = new ArrayList<>(count);
         List<RecordEntryType> types = new ArrayList<>(count);
         List<Integer> sizes = new ArrayList<>(count);
         List<Boolean> uniques = new ArrayList<>(count);
         List<Boolean> nullables = new ArrayList<>(count);
         List<Object> defaultValues = new ArrayList<>(count);
         for (int i = 0; i < count; i++) {
+            byte[] arr = new byte[buf.getInt()];
+            buf.get(arr);
+            names.add(new String(arr));
             types.add(RecordEntryType.VALUES[buf.get()]);
             sizes.add((int) buf.get());
             uniques.add(buf.get() == 1 ? true : false);
@@ -163,7 +178,7 @@ public class TableSchema {
             }
         }
         int primaryKeyIndex = buf.get();
-        return new TableSchema(types, sizes, defaultValues, uniques, nullables, primaryKeyIndex, false);
+        return new TableSchema(names, types, sizes, defaultValues, uniques, nullables, primaryKeyIndex, false);
     }
 
     private static String parseCharFixed(ByteBuffer buf, int size) {

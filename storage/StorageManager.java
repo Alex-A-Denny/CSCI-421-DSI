@@ -282,7 +282,7 @@ public class StorageManager {
      * @param defaultValue the default value to use in the column
      * @return if successful
      */
-    public boolean alterAdd(int tableId, RecordEntryType type, int size, Object defaultValue) {
+    public boolean alterAdd(int tableId, String name, RecordEntryType type, int size, Object defaultValue) {
         String oldName = catalog.getTableName(tableId);
         if (oldName == null) {
             // table does not exist
@@ -295,8 +295,10 @@ public class StorageManager {
         }
 
         TableSchema schema = oldCodec.schema.copy();
+        schema.names.add(name);
         schema.types.add(type);
         schema.sizes.add(size == -1 ? type.size() : size);
+        schema.defaultValues.add(defaultValue);
         schema.uniques.add(false);
         schema.nullables.add(true);
         RecordCodec codec = new RecordCodec(schema);
@@ -333,7 +335,7 @@ public class StorageManager {
             newPage.buf.rewind();
         }
 
-        catalog.changeTableId(tableId, id);
+        catalog.deleteTable(tableId);
         catalog.renameTable(id, oldName);
         for (int pageId : pages) {
             if (!deletePage(pageId)) {
@@ -402,7 +404,7 @@ public class StorageManager {
             newPage.buf.rewind();
         }
 
-        catalog.changeTableId(tableId, id);
+        catalog.deleteTable(tableId);
         catalog.renameTable(id, oldName);
         for (int pageId : pages) {
             if (!deletePage(pageId)) {
@@ -511,6 +513,7 @@ public class StorageManager {
                             continue;
                         }
                         if (a.equals(b)) {
+                            System.err.println("Error: Duplicate value found in unique column '" + codec.schema.names.get(i) + "': " + a);
                             return false;
                         }
                     }

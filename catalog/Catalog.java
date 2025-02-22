@@ -74,16 +74,11 @@ public class Catalog {
         pages.remove(tableId);
     }
 
-    public void changeTableId(int oldId, int newId) {
-        tableNames.put(tables.get(oldId), newId);
-        tables.put(newId, tables.get(oldId));
-        codecs.put(newId, codecs.get(oldId));
-        pages.put(newId, pages.get(oldId));
-        deleteTable(oldId);
-    }
-
     public void renameTable(int id, String name) {
+        String oldName = tables.get(id);
         tables.put(id, name);
+        tableNames.put(name, id);
+        tableNames.remove(oldName);
     }
 
     public ByteBuffer encode() {

@@ -12,6 +12,6 @@ public class RecordEntry {
 
     @Override
     public String toString() {
-        return "RecordEntry{" + data.toString() + "}";
+        return data.toString();
     }
 }
