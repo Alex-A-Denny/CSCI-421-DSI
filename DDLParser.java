@@ -79,7 +79,7 @@ public class DDLParser {
         if (storageManager.dropTable(tableID)) {
             System.out.println("Table '" + tableName + "' dropped successfully.");
         } else {
-            System.err.println("Unable to drop table: '" + tableName + "'");
+            System.err.println("Error: Unable to drop table: '" + tableName + "'");
         }
     }
 

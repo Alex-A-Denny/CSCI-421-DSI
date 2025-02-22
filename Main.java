@@ -39,7 +39,7 @@ public class Main {
         try {
             pageSize = Integer.parseInt(args[1]);
         } catch (NumberFormatException e) {
-            System.err.println("Unable to parse page size");
+            System.err.println("Error: Unable to parse page size");
             System.exit(1);
             return;
         }
@@ -47,7 +47,7 @@ public class Main {
         try {
             pageBufferSize = Integer.parseInt(args[2]);
         } catch (NumberFormatException e) {
-            System.err.println("Unable to parse page buffer size");
+            System.err.println("Error: Unable to parse page buffer size");
             System.exit(1);
             return;
         }
@@ -148,7 +148,7 @@ public class Main {
         try {
             Files.write(catalogPath, encodedCatalog.array());
         } catch (IOException e) {
-            System.err.println("Unable to write catalog");
+            System.err.println("Error: Unable to write catalog");
             e.printStackTrace();
             System.exit(1);
             return;
@@ -156,7 +156,7 @@ public class Main {
         try {
             pageBuffer.purge();
         } catch (IOException e) {
-            System.err.println("Unable to purge page buffer");
+            System.err.println("Error: Unable to purge page buffer");
             e.printStackTrace();
             System.exit(1);
             return;
