@@ -261,7 +261,8 @@ public class DMLParser {
                 
                 System.out.println("Table name: " + catalog.getTableName(tableId));
                 System.out.println("Table schema: " + catalog.getCodec(tableId).schema);
-                System.out.println("");
+                System.out.println("Pages: " + catalog.getPages(tableId).size());
+                System.out.println("Records: " + catalog.getPages(tableId).size());
             }
         }
     }
