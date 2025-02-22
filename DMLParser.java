@@ -12,6 +12,8 @@ import catalog.Catalog;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import page.RecordCodec;
 import page.RecordEntry;
@@ -197,7 +199,12 @@ public class DMLParser {
             }
 
             valuesPart = valuesPart.substring(1, valuesPart.length() - 1).trim();
-            String[] values = valuesPart.split("\\s* +\\s*");
+            // String[] values = valuesPart.split("\\s* +\\s*");
+            List<String> values = new ArrayList<>();
+            Matcher matcher = Pattern.compile("\"[^\"]*\"|\\S+").matcher(valuesPart);
+            while (matcher.find()) {
+                values.add(matcher.group());
+            }
 
             // Convert values into a RecordEntry
             List<Object> recordValues = new ArrayList<>();

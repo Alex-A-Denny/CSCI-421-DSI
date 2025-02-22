@@ -119,15 +119,18 @@ public class Catalog {
         }
         // pages
         Map<Integer, ByteBuffer> encodedPages = new HashMap<>();
-        for (var entry : pages.entrySet()) {
-            var list = entry.getValue();
+        for (int id : tables.keySet()) {
+            var list = pages.get(id);
+            if (list == null) {
+                list = new ArrayList<>();
+            }
             ByteBuffer encoded = ByteBuffer.allocate(list.size() * 4 + 4);
             encoded.putInt(list.size());
             for (int pageId : list) {
                 encoded.putInt(pageId);
             }
             encoded.rewind();
-            encodedPages.put(entry.getKey(), encoded);
+            encodedPages.put(id, encoded);
             size += encoded.capacity();
         }
 
@@ -172,7 +175,9 @@ public class Catalog {
             catalog.tables.put(tableId, tableName);
             catalog.tableNames.put(tableName, tableId);
             catalog.codecs.put(tableId, codec);
-            catalog.pages.put(tableId, pages);
+            if (!pages.isEmpty()) {
+                catalog.pages.put(tableId, pages);
+            }
         }
         return catalog;
     }
