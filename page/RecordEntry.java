@@ -2,6 +2,8 @@ package page;
 
 import java.util.List;
 
+// Author: Spencer Warren
+
 public class RecordEntry {
 
     public final List<Object> data;

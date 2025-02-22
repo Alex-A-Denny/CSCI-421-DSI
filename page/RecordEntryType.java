@@ -1,5 +1,7 @@
 package page;
 
+// Author: Spencer Warren
+
 public enum RecordEntryType {
     INT,
     DOUBLE,

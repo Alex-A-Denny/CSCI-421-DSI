@@ -7,6 +7,8 @@ import java.util.List;
 
 import page.RecordEntryType;
 
+// Author: Spencer Warren
+
 public class TableSchema {
     public static final int MAX_COLUMNS = 32; // null bitmask is 4 bytes so we can't support more cols than that
 
@@ -208,5 +210,19 @@ public class TableSchema {
         byte[] arr = new byte[length];
         buf.get(arr);
         return new String(arr);
+    }
+
+    @Override
+    public String toString() {
+        List<String> list = new ArrayList<>(types.size());
+        for (int i = 0; i < types.size(); i++) {
+            String inner = i == primaryKeyIndex ? "primarykey " : "";
+            inner += nullables.get(i) ? "" : "notnull ";
+            inner += uniques.get(i) ? "unique" : "";
+            inner.trim();
+            String s = String.format("%s: %s %s", names.get(i), types.get(i), inner);
+            list.add(s);
+        }
+        return String.join("\n", list);
     }
 }

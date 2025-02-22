@@ -4,6 +4,8 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
+// Author: Spencer Warren
+
 public class Page {
     public final int id;
     public final ByteBuffer buf;

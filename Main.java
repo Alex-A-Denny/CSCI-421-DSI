@@ -28,6 +28,7 @@ import table.TableSchema;
 public class Main {
 
     public static void main(String[] args) {
+        args = new String[]{"db", "50", "2"};
         if (args.length < 3) {
             System.err.println("Usage: java Main <db loc> <page size> <buffer size>");
             return;
@@ -118,7 +119,7 @@ public class Main {
                         query = "";
                     }   
                     if(query.toLowerCase().startsWith("alter")){
-                        ddl.parseAlterTable(query, query.toLowerCase());
+                        ddl.parseAlterTable(query.toLowerCase());
                         query = "";
                     }        
                     
@@ -139,6 +140,25 @@ public class Main {
                     }
                 }
             }
+        }
+
+        // write everything to the disk before exit
+        ByteBuffer encodedCatalog = catalog.encode();
+        try {
+            Files.write(catalogPath, encodedCatalog.array());
+        } catch (IOException e) {
+            System.err.println("Unable to write catalog");
+            e.printStackTrace();
+            System.exit(1);
+            return;
+        }
+        try {
+            pageBuffer.purge();
+        } catch (IOException e) {
+            System.err.println("Unable to purge page buffer");
+            e.printStackTrace();
+            System.exit(1);
+            return;
         }
     }
 }
