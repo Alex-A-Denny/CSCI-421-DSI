@@ -57,7 +57,7 @@ public class DMLParser {
     if (tableName.isEmpty() || catalog.getTable(tableName) != null) return;
 
     String[] columns = input.substring(openParen + 1, closeParen).split("\\s*,\\s*");
-    if (columns.length > TableSchema.MAX_COLUMNS) return; // 确保列数不超过 32
+    if (columns.length > TableSchema.MAX_COLUMNS) return; // 32
 
     List<RecordEntryType> types = new ArrayList<>();
     List<Integer> sizes = new ArrayList<>();
