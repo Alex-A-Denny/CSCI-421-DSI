@@ -258,14 +258,11 @@ public class DMLParser {
             System.out.println("Tables:");
             for ( Integer tableId : catalog.getTables().keySet()) {
                 System.out.println("Table name: " + catalog.getTableName(tableId));
-<<<<<<< HEAD
                 System.out.println("Table schema: " + catalog.getCodec(tableId).schema);
                 System.out.println("Pages: " + catalog.getPages(tableId).size());
                 System.out.println("Records: " + catalog.getPages(tableId).size());
-=======
                 System.out.println("Table schema:\n" + catalog.getCodec(tableId).schema);
                 System.out.println("");
->>>>>>> a6480e5f132db3bcd6f1b99194dc500aa67c9aab
             }
         } else if (input.toLowerCase().startsWith("display info")) {
             String tableName = input.substring(input.indexOf("display info") + "display info".length()).trim();
@@ -278,6 +275,7 @@ public class DMLParser {
             System.out.println("Table schema:\n" + catalog.getCodec(tableId).schema);
             System.out.println("");
         }
+        
     }
 
     /**
