@@ -105,8 +105,9 @@ public class Main {
                 query = query.concat(input + " ");
                 //System.out.println("QUERY: " + query);
                 
-                if(query.strip().endsWith(";")){      //Input gathering done, sending user
-                                                             //input to parsers  
+                if(query.strip().endsWith(";")){
+                    //Input gathering done, sending user input to parsers  
+                    query = query.substring(0, query.lastIndexOf(";")).trim();
 
                     //send to DDL Parser
                     if(query.toLowerCase().startsWith("create")){

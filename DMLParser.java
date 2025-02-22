@@ -255,14 +255,22 @@ public class DMLParser {
             System.out.println("Buffer Size: " + storageManager.pageBuffer.getCapacity());
             System.out.println();
 
+            System.out.println("Tables:");
             for ( Integer tableId : catalog.getTables().keySet()) {
-                System.out.println("Tables:\n");
-
-                
                 System.out.println("Table name: " + catalog.getTableName(tableId));
-                System.out.println("Table schema: " + catalog.getCodec(tableId).schema);
+                System.out.println("Table schema:\n" + catalog.getCodec(tableId).schema);
                 System.out.println("");
             }
+        } else if (input.toLowerCase().startsWith("display info")) {
+            String tableName = input.substring(input.indexOf("display info") + "display info".length()).trim();
+            Integer tableId = catalog.getTable(tableName);
+            if (tableId == null) {
+                System.err.println("Error: table does not exist: " + tableName);
+                return;
+            }
+            System.out.println("Table name: " + catalog.getTableName(tableId));
+            System.out.println("Table schema:\n" + catalog.getCodec(tableId).schema);
+            System.out.println("");
         }
     }
 
