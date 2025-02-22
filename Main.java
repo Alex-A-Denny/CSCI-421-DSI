@@ -89,40 +89,54 @@ public class Main {
         DMLParser dml = new DMLParser(storageManager);
     
         try (Scanner scanner = new Scanner(System.in)) {
-            //DDLParser DDL = new DDLParser();
+            
 
-            String lower = "";//holds the input string as lowercase
-                                //for the parsers
+            String query = "";//holds the total userinput string 
+                              //for the parsers
 
             while (scanner.hasNext()) {
                 String input = scanner.next();
 
-                if (input.toLowerCase().equals("quit") && lower.isEmpty()){
+                if (input.toLowerCase().equals("quit") && query.isEmpty()){
                     break;
                 }
                 //System.out.println("Input: " + input);
-                lower = lower.concat(input.toLowerCase() + " ");
-                //System.out.println("LOWER: " + lower);
+                query = query.concat(input + " ");
+                //System.out.println("QUERY: " + query);
                 
-                if(lower.strip().endsWith(";")){      //sending user
-                                                                //input to parsers  
-                    if(lower.startsWith("create") ||  
-                        lower.startsWith("drop") || 
-                        lower.startsWith("alter")){
-                            //send to DDLParser
-                            // ddl.parseCreateTable(lower);
-                            lower = "";
-                    }            
-                    
-                    if(lower.startsWith("insert") ||  
-                        lower.startsWith("display") || 
-                        lower.startsWith("select")){
+                if(query.strip().endsWith(";")){      //Input gathering done, sending user
+                                                             //input to parsers  
 
-                            //send to DMLParser
-                            System.out.println("DMLParser");
-                            lower = "";
-
+                    //send to DDL Parser
+                    if(query.toLowerCase().startsWith("create")){
+                            
+                        dml.parseCreateTable(query);
+                        query = "";
+                    } 
+                    if(query.toLowerCase().startsWith("drop")){
+                        ddl.parseDropTable(query);
+                        query = "";
                     }   
+                    if(query.toLowerCase().startsWith("alter")){
+                        ddl.parseAlterTable(query, query.toLowerCase());
+                        query = "";
+                    }        
+                    
+                    //send to DMLParser
+                    if(query.toLowerCase().startsWith("insert")){
+
+                        dml.parseInsert(query);
+                        query = "";
+
+                    }  
+                    if(query.toLowerCase().startsWith("display") ){
+                        dml.parseDisplay(query);
+                        query = "";
+                    }
+                    if(query.startsWith("select")){
+                        dml.parseSelect(query);
+                        query = "";
+                    }
                 }
             }
         }

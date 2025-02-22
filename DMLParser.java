@@ -11,6 +11,8 @@
 import catalog.Catalog;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+
 import page.RecordCodec;
 import page.RecordEntry;
 import page.RecordEntryType;
@@ -47,6 +49,8 @@ public class DMLParser {
         String tableName;
     }
 
+
+    //TODO: Transfer this method to DDLParser
     public void parseCreateTable(String input) {
     input = input.trim().toLowerCase();
     if (!input.startsWith("create table") || !input.contains("(") || !input.contains(")")) return;
@@ -181,6 +185,26 @@ public class DMLParser {
 
         RecordEntry record = new RecordEntry(recordValues);
         storageManager.insertRecord(tableId, record);
+    }
+
+    //parses Display Schema and display info
+    public void parseDisplay(String input){
+        
+        if (input.toLowerCase().startsWith("display schema")){
+            System.out.println("DB Location: " + storageManager.pageBuffer.getPagesDir());
+            System.out.println("Page Size: " + catalog.getPageSize());
+            System.out.println("Buffer Size: " + storageManager.pageBuffer.getCapacity());
+            System.out.println();
+
+            for ( Integer tableId : catalog.getTables().keySet()) {
+                System.out.println("Tables:\n");
+
+                
+                System.out.println("Table name: " + catalog.getTableName(tableId));
+                System.out.println("Table schema: " + catalog.getCodec(tableId).schema);
+                System.out.println("");
+            }
+        }
     }
 
     /**

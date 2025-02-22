@@ -29,6 +29,26 @@ public class PageBuffer {
         this.queue = new ArrayDeque<>(capacity);
     }
 
+    
+
+    public Path getPagesDir() {
+        return pagesDir;
+    }
+
+
+
+    public int getPageSize() {
+        return pageSize;
+    }
+
+
+
+    public int getCapacity() {
+        return capacity;
+    }
+
+
+
     public Page get(int pageId) throws IOException {
         Page page = map.get(pageId);
         if (page == null) {

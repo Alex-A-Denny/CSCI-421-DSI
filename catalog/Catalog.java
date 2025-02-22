@@ -28,6 +28,22 @@ public class Catalog {
     public Integer getTable(String name) {
         return tableNames.get(name);
     }
+    
+    public Map<Integer, String> getTables() {
+        return tables;
+    }
+
+    public int getPageSize() {
+        return pageSize;
+    }
+
+    public int getTableCounter() {
+        return tableCounter;
+    }
+
+    public int getPageCounter() {
+        return pageCounter;
+    }
 
     public int createTable(String name, RecordCodec codec) {
         if (tableNames.containsKey(name)) {

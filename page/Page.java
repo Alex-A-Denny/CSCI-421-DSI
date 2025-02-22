@@ -13,6 +13,14 @@ public class Page {
         this.buf = buf;
     }
 
+    public int getId() {
+        return id;
+    }
+
+    public ByteBuffer getBuf() {
+        return buf;
+    }
+
     /**
      * Read the contents of the page
      *

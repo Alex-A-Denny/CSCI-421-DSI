@@ -18,7 +18,7 @@ import table.TableSchema;
 public class DDLParser {
 
 
-    class Attribute{
+    /*class Attribute{
 
     }
 
@@ -30,11 +30,11 @@ public class DDLParser {
 
 
    
-    public static void parseCreateTable(String input) {
+    public void parseCreateTable(String input) {
         System.out.println(input);
             CreateTable ct = new CreateTable();
             ct.tableName = input;
-    }
+    }*/
     
 
 
