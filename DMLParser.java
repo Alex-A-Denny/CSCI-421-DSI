@@ -59,6 +59,7 @@ public class DMLParser {
     String[] columns = input.substring(openParen + 1, closeParen).split("\\s*,\\s*");
     if (columns.length > TableSchema.MAX_COLUMNS) return; // 确保列数不超过 32
 
+    List<String> names = new ArrayList<>();
     List<RecordEntryType> types = new ArrayList<>();
     List<Integer> sizes = new ArrayList<>();
     List<Object> defaultValues = new ArrayList<>();
@@ -112,6 +113,7 @@ public class DMLParser {
             }
         }
 
+        names.add(parts[0]);
         types.add(type);
         sizes.add(size);
         defaultValues.add(defaultValue);
@@ -121,7 +123,7 @@ public class DMLParser {
 
     if (primaryKeyIndex == -1) return;
 
-    TableSchema schema = new TableSchema(types, sizes, defaultValues, unique, nullable, primaryKeyIndex, true);
+    TableSchema schema = new TableSchema(names, types, sizes, defaultValues, unique, nullable, primaryKeyIndex, true);
     catalog.createTable(tableName, new RecordCodec(schema));
 }
 
