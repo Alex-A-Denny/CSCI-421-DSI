@@ -27,26 +27,6 @@ public class DMLParser {
         this.catalog = storageManager.catalog;
     }
 
-
-    // class Attribute{
-
-    // }
-
-    // static class CreateTable{
-    //     int id;
-    //     String tableName;
-
-    // }
-
-    static class InsertRecord {
-        String tableName;
-        String[] values;
-    }
-
-    static class SelectQuery {
-        String tableName;
-    }
-
     public void parseCreateTable(String input) {
     input = input.trim().toLowerCase();
     if (!input.startsWith("create table") || !input.contains("(") || !input.contains(")")) return;
@@ -54,10 +34,17 @@ public class DMLParser {
     int openParen = input.indexOf('(');
     int closeParen = input.lastIndexOf(')');
     String tableName = input.substring(12, openParen).trim();
-    if (tableName.isEmpty() || catalog.getTable(tableName) != null) return;
+    if (tableName.isEmpty()) {
+        System.err.println("Error: table name cannot be empty");
+        return;
+    }
+    if (catalog.getTable(tableName) != null) {
+        System.err.println("Error: Table already exists: " + tableName);
+        return;
+    }
 
     String[] columns = input.substring(openParen + 1, closeParen).split("\\s*,\\s*");
-    if (columns.length > TableSchema.MAX_COLUMNS) return; // 确保列数不超过 32
+    if (columns.length > TableSchema.MAX_COLUMNS) return;
 
     List<String> names = new ArrayList<>();
     List<RecordEntryType> types = new ArrayList<>();
@@ -70,7 +57,14 @@ public class DMLParser {
 
     for (int i = 0; i < columns.length; i++) {
         String[] parts = columns[i].trim().split("\\s+");
-        if (parts.length < 2) return;
+        if (parts.length < 2) {
+            System.err.println("Error: missing attributes in column definition");
+            return;
+        }
+        if (names.contains(parts[0].trim())) {
+            System.err.println("Error: Duplicate column name: " + parts[0].trim());
+            return;
+        }
 
         RecordEntryType type;
         int size = -1;
@@ -84,7 +78,10 @@ public class DMLParser {
                 if (parts[1].startsWith("char(") || parts[1].startsWith("varchar(")) {
                     size = Integer.parseInt(parts[1].replaceAll("\\D", ""));
                     type = parts[1].startsWith("char") ? RecordEntryType.CHAR_FIXED : RecordEntryType.CHAR_VAR;
-                } else return;
+                } else {
+                    System.err.println("Error: invalid type: " + parts[1]);
+                    return;
+                }
             }
         }
 
@@ -95,7 +92,10 @@ public class DMLParser {
                 case "notnull" -> isNullable = false;
                 case "unique" -> isUnique = true;
                 case "primarykey" -> {
-                    if (primaryKeyIndex != -1) return;
+                    if (primaryKeyIndex != -1) {
+                        System.err.println("Error: cannot have more than one primary key");
+                        return;
+                    }
                     primaryKeyIndex = i;
                     isNullable = false;
                     isUnique = true;
@@ -113,7 +113,7 @@ public class DMLParser {
             }
         }
 
-        names.add(parts[0]);
+        names.add(parts[0].trim());
         types.add(type);
         sizes.add(size);
         defaultValues.add(defaultValue);
@@ -121,10 +121,19 @@ public class DMLParser {
         unique.add(isUnique);
     }
 
-    if (primaryKeyIndex == -1) return;
+    if (primaryKeyIndex == -1) {
+        System.err.println("Error: must have a primary key");
+        return;
+    }
+
+    if (names.isEmpty()) {
+        System.err.println("Error: must have at least 1 value");
+        return;
+    }
 
     TableSchema schema = new TableSchema(names, types, sizes, defaultValues, unique, nullable, primaryKeyIndex, true);
     catalog.createTable(tableName, new RecordCodec(schema));
+    System.out.println("Table created.");
 }
 
 
@@ -154,33 +163,65 @@ public class DMLParser {
         String tableName = parts[0].replace("insert into", "").trim();
         Integer tableId = catalog.getTable(tableName);
         if (tableId == null) {
+            System.err.println("Error: No table exists with name " + tableName);
             return;
         }
 
-        String valuesPart = parts[1].trim();
-        if (!valuesPart.startsWith("(") || !valuesPart.endsWith(")")) {
-            return;
-        }
+        String[] valueEntryParts = parts[1].trim().split(",");
+        for (String valuesPart : valueEntryParts) {
+            valuesPart = valuesPart.trim();
+            if (!valuesPart.startsWith("(") || !valuesPart.endsWith(")")) {
+                return;
+            }
 
-        valuesPart = valuesPart.substring(1, valuesPart.length() - 1).trim();
-        String[] values = valuesPart.split("\\s*,\\s*");
+            valuesPart = valuesPart.substring(1, valuesPart.length() - 1).trim();
+            String[] values = valuesPart.split("\\s* +\\s*");
 
-        // Convert values into a RecordEntry
-        List<Object> recordValues = new ArrayList<>();
-        for (String value : values) {
-            if (value.matches("-?\\d+")) { 
-                recordValues.add(Integer.parseInt(value));
-            } else if (value.matches("-?\\d+\\.\\d+")) { 
-                recordValues.add(Double.parseDouble(value));
-            } else if (value.equalsIgnoreCase("true") || value.equalsIgnoreCase("false")) { 
-                recordValues.add(Boolean.parseBoolean(value));
-            } else { 
-                recordValues.add(value.replace("\"", ""));
+            // Convert values into a RecordEntry
+            List<Object> recordValues = new ArrayList<>();
+            for (String value : values) {
+                if (value.matches("-?\\d+")) { 
+                    recordValues.add(Integer.parseInt(value));
+                } else if (value.matches("-?\\d+\\.\\d+")) { 
+                    recordValues.add(Double.parseDouble(value));
+                } else if (value.equalsIgnoreCase("true") || value.equalsIgnoreCase("false")) { 
+                    recordValues.add(Boolean.parseBoolean(value));
+                } else if (value.matches("\".*\"")) { 
+                    recordValues.add(value.replace("\"", ""));
+                } else {
+                    System.err.println("Error: Could not parse value: " + value);
+                    return;
+                }
+            }
+
+            TableSchema schema = catalog.getCodec(tableId).schema;
+            if (recordValues.size() != schema.types.size()) {
+                System.err.println("Error: incorrect number of values, got: " + recordValues.size() + ", need: " + schema.types.size());
+                return;
+            }
+            for (int i = 0; i < schema.types.size(); i++) {
+                if (!schema.types.get(i).matchesType(recordValues.get(i))) {
+                    System.err.println("Error: value '" + recordValues.get(i) + "' has wrong type: " + recordValues.get(i).getClass().getSimpleName() + ". Need: " + schema.types.get(i).name());
+                    return;
+                }
+            }
+            for (int i = 0; i < schema.sizes.size(); i++) {
+                if (schema.types.get(i) == RecordEntryType.CHAR_FIXED || schema.types.get(i) == RecordEntryType.CHAR_VAR) {
+                    if (recordValues.get(i) instanceof String s && s.getBytes().length >= schema.sizes.get(i)) {
+                        System.err.println("Error: Value '" + recordValues.get(i) + "' is too large");
+                        return;
+                    }
+                }
+            }
+
+            RecordEntry record = new RecordEntry(recordValues);
+            boolean result = storageManager.insertRecord(tableId, record);
+            if (!result) {
+                System.err.println("Error: storage issue during insert");
+                return;
             }
         }
-
-        RecordEntry record = new RecordEntry(recordValues);
-        storageManager.insertRecord(tableId, record);
+        System.out.println("Success.");
     }
 
     /**
@@ -193,9 +234,13 @@ public class DMLParser {
 
         String tableName = input.replace("select * from", "").trim();
         Integer tableId = catalog.getTable(tableName);
-        if (tableId == null) return;
+        if (tableId == null) {
+            System.err.println("Error: No table exists with name " + tableName);
+            return;
+        }
 
         List<RecordEntry> records = storageManager.findRecords(tableId, r -> true);
+        System.out.println(catalog.getCodec(tableId).schema.names);
 
         for (RecordEntry record : records) {
             System.out.println(record.data); 

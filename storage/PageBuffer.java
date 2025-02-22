@@ -11,6 +11,8 @@ import java.util.Map;
 
 import page.Page;
 
+// Author: Spencer Warren
+
 public class PageBuffer {
 
     private final Path pagesDir;

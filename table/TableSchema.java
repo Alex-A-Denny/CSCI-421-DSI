@@ -7,6 +7,8 @@ import java.util.List;
 
 import page.RecordEntryType;
 
+// Author: Spencer Warren
+
 public class TableSchema {
     public static final int MAX_COLUMNS = 32; // null bitmask is 4 bytes so we can't support more cols than that
 

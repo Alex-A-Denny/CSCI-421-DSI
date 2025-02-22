@@ -15,6 +15,8 @@ import page.RecordEntry;
 import page.RecordEntryType;
 import table.TableSchema;
 
+// Author: Spencer Warren
+
 public class StorageManager {
     public final Catalog catalog;
     public final PageBuffer pageBuffer;
@@ -266,6 +268,8 @@ public class StorageManager {
                             throw new IllegalStateException("Unable to shiftInsert in new page after page split");
                         }
                     }
+                } else {
+                    return true;
                 }
             }
         }

@@ -30,6 +30,7 @@ import table.TableSchema;
 public class Main {
 
     public static void main(String[] args) {
+        args = new String[]{"db", "50", "2"};
         if (args.length < 3) {
             System.err.println("Usage: java Main <db loc> <page size> <buffer size>");
             return;

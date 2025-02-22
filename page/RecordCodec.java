@@ -7,6 +7,8 @@ import java.util.List;
 
 import table.TableSchema;
 
+// Author: Spencer Warren
+
 public class RecordCodec {
     public final TableSchema schema;
 
