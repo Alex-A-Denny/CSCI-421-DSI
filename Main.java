@@ -113,7 +113,7 @@ public class Main {
                     //send to DDL Parser
                     if(query.toLowerCase().startsWith("create")){
                             
-                        dml.parseCreateTable(query);
+                        ddl.parseCreateTable(query);
                         query = "";
                     } 
                     if(query.toLowerCase().startsWith("drop")){

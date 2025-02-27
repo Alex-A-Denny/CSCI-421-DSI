@@ -51,7 +51,7 @@ public class DMLParser {
         String tableName;
     }
 
-    public void parseCreateTable(String input) {
+    /*public void parseCreateTable(String input) {
     input = input.trim().toLowerCase();
     if (!input.startsWith("create table") || !input.contains("(") || !input.contains(")")) return;
 
@@ -158,7 +158,7 @@ public class DMLParser {
     TableSchema schema = new TableSchema(names, types, sizes, defaultValues, unique, nullable, primaryKeyIndex, true);
     catalog.createTable(tableName, new RecordCodec(schema));
     System.out.println("Table created.");
-}
+}*/
 
 
     // public static void parseCreateTable(String input){

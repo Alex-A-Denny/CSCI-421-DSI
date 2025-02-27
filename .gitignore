@@ -1,3 +1,4 @@
 *.class
 db/
 DB_Test/
+*.zip
