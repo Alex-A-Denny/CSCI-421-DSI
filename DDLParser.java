@@ -1,3 +1,11 @@
+// DDLParser.java
+// Parses user commands for insert,
+// display, and select
+//
+// Author: Alex A Denny
+//
+////////////////////////////////////////
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -8,14 +16,6 @@ import storage.StorageManager;
 import table.TableSchema;
 
 
- //takes in a string//
-// DDLParser.java
-// Parses user commands for insert,
-// display, and select
-//
-// Author: Alex A Denny
-//
-////////////////////////////////////////
 
 
 
