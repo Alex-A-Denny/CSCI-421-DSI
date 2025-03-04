@@ -1,4 +1,7 @@
 *.class
 db/
 DB_Test/
+.vscode
+.idea
+*.iml
 *.zip

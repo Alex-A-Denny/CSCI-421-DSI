@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import java.util.function.Consumer;
 import java.util.function.Predicate;
 
 import catalog.Catalog;
@@ -72,36 +73,60 @@ public class StorageManager {
     }
 
     /**
+     * @param tableId the id of the table
+     * @return the amount of records in the table
+     */
+    public int findRecordCount(int tableId) {
+        RecordCodec codec = catalog.getCodec(tableId);
+        List<Integer> pages = catalog.getPages(tableId);
+        if (pages == null) {
+            return 0;
+        }
+
+        int sum = 0;
+        for (int pageId : pages) {
+            Page page = getPage(pageId);
+            if (page == null) {
+                return 0;
+            }
+
+            page.buf.rewind();
+            List<RecordEntry> entries = page.read(codec);
+            sum += entries.size();
+        }
+        return sum;
+    }
+
+    /**
      * Runs the SELECT operation
      * 
      * @param tableId the id of the table
      * @param predicate the predicate for search
      * @return the list of entries matching the predicate, or null if an error occurs
      */
-    public List<RecordEntry> findRecords(int tableId, Predicate<RecordEntry> predicate) {
-        List<RecordEntry> list = new ArrayList<>();
+    public void findRecords(int tableId, Predicate<RecordEntry> predicate, Consumer<RecordEntry> operation) {
         RecordCodec codec = catalog.getCodec(tableId);
         List<Integer> pages = catalog.getPages(tableId);
         if (pages == null) {
-            return Collections.emptyList();
+            return;
         }
 
         for (int pageId : pages) {
             Page page = getPage(pageId);
             if (page == null) {
-                return null;
+                return;
             }
 
             page.buf.rewind();
+            List<RecordEntry> list = new ArrayList<>();
             List<RecordEntry> entries = page.read(codec);
             for (RecordEntry entry : entries) {
                 if (predicate.test(entry)) {
                     list.add(entry);
                 }
             }
+            list.forEach(operation);
         }
-
-        return list;
     }
 
     /**

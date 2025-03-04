@@ -181,6 +181,7 @@ public class DMLParser {
         // Extract table name and values
         String[] parts = input.split("values");
         if (parts.length != 2) {
+            System.err.println("Error: malformed command input: " + input);
             return;
         }
 
@@ -271,7 +272,7 @@ public class DMLParser {
                 System.out.println("Table schema:\n" + catalog.getCodec(tableId).schema);
                 var pages = catalog.getPages(tableId);
                 System.out.println("Pages: " + (pages == null ? 0 : pages.size()));
-                System.out.println("Records: " + storageManager.findRecords(tableId, (o) -> true).size());
+                System.out.println("Records: " + storageManager.findRecordCount(tableId));
                 System.out.println("");
             }
         } else if (input.toLowerCase().startsWith("display info")) {
@@ -285,7 +286,7 @@ public class DMLParser {
             System.out.println("Table schema:\n" + catalog.getCodec(tableId).schema);
             var pages = catalog.getPages(tableId);
             System.out.println("Pages: " + (pages == null ? 0 : pages.size()));
-            System.out.println("Records: " + storageManager.findRecords(tableId, (o) -> true).size());
+            System.out.println("Records: " + storageManager.findRecordCount(tableId));
         }
         
     }
@@ -305,12 +306,8 @@ public class DMLParser {
             return;
         }
 
-        List<RecordEntry> records = storageManager.findRecords(tableId, r -> true);
         System.out.println(catalog.getCodec(tableId).schema.names);
-
-        for (RecordEntry record : records) {
-            System.out.println(record.data); 
-        }
+        storageManager.findRecords(tableId, r -> true, record -> System.out.println(record.data));
     }
 
     
