@@ -3,7 +3,6 @@ package storage;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.function.Consumer;
@@ -41,8 +40,8 @@ public class StorageManager {
             return true;
         }
 
-        for (int pageId : pages) {
-            Page page = getPage(pageId);
+        for (int pageNum : pages) {
+            Page page = getPage(tableId, pageNum);
             if (page == null) {
                 return false;
             }
@@ -65,7 +64,7 @@ public class StorageManager {
             page.buf.rewind();
             int written = page.write(codec, entries, 0);
             if (written != entries.size()) {
-                throw new IllegalStateException("Unable to write a subset of entries to the same page with id " + pageId);
+                throw new IllegalStateException("Unable to write a subset of entries to the same page with id " + pageNum);
             }
             page.buf.rewind();
         }
@@ -84,8 +83,8 @@ public class StorageManager {
         }
 
         int sum = 0;
-        for (int pageId : pages) {
-            Page page = getPage(pageId);
+        for (int pageNum : pages) {
+            Page page = getPage(tableId, pageNum);
             if (page == null) {
                 return 0;
             }
@@ -111,8 +110,8 @@ public class StorageManager {
             return;
         }
 
-        for (int pageId : pages) {
-            Page page = getPage(pageId);
+        for (int pageNum : pages) {
+            Page page = getPage(tableId, pageNum);
             if (page == null) {
                 return;
             }
@@ -148,20 +147,20 @@ public class StorageManager {
             return false;
         }
 
-        List<Integer> pageIds = catalog.getPages(tableId);
-        if (pageIds == null) {
+        List<Integer> pageNums = catalog.getPages(tableId);
+        if (pageNums == null) {
             // has no pages, allocate a new one
             Page page = allocateNewPage(tableId, -1);
             if (page == null) {
                 return false;
             }
             // refresh the page id list
-            pageIds = catalog.getPages(tableId);
+            pageNums = catalog.getPages(tableId);
         }
 
-        for (int i = 0; i < pageIds.size(); i++) {
-            int pageId = pageIds.get(i);
-            Page page = getPage(pageId);
+        for (int i = 0; i < pageNums.size(); i++) {
+            int pageNum = pageNums.get(i);
+            Page page = getPage(tableId, pageNum);
             if (page == null) {
                 return false;
             }
@@ -188,7 +187,7 @@ public class StorageManager {
 
             if (insertionPoint < 0) {
                 // no insertion point found
-                if (i + 1 < pageIds.size()) {
+                if (i + 1 < pageNums.size()) {
                     // there is another page, try that
                     page.buf.rewind();
                     continue;
@@ -241,7 +240,7 @@ public class StorageManager {
                     page.buf.putInt(originalPageAmount); // update the count
                     page.buf.rewind();
 
-                    Page newPage = allocateNewPage(tableId, page.id + 1);  // new page goes right after old one
+                    Page newPage = allocateNewPage(tableId, page.num + 1);  // new page goes right after old one
                     if (newPage == null) {
                         return false;
                     }
@@ -338,8 +337,8 @@ public class StorageManager {
         }
 
         int id = catalog.createTable(oldName + "_alter_add_tmp", codec);
-        for (int pageId : pages) {
-            Page page = getPage(pageId);
+        for (int pageNum : pages) {
+            Page page = getPage(tableId, pageNum);
             if (page == null) {
                 return false;
             }
@@ -370,8 +369,8 @@ public class StorageManager {
 
         catalog.deleteTable(tableId);
         catalog.renameTable(id, oldName);
-        for (int pageId : pages) {
-            if (!deletePage(pageId)) {
+        for (int pageNum : pages) {
+            if (!deletePage(tableId, pageNum)) {
                 return false;
             }
         }
@@ -409,8 +408,8 @@ public class StorageManager {
 
         int id = catalog.createTable(oldName + "_alter_add_tmp", codec);
         List<Integer> pages = catalog.getPages(tableId);
-        for (int pageId : pages) {
-            Page page = getPage(pageId);
+        for (int pageNum : pages) {
+            Page page = getPage(tableId, pageNum);
             if (page == null) {
                 return false;
             }
@@ -441,8 +440,8 @@ public class StorageManager {
 
         catalog.deleteTable(tableId);
         catalog.renameTable(id, oldName);
-        for (int pageId : pages) {
-            if (!deletePage(pageId)) {
+        for (int pageNum : pages) {
+            if (!deletePage(tableId, pageNum)) {
                 return false;
             }
         }
@@ -461,11 +460,11 @@ public class StorageManager {
         if (pages == null) {
             return false;
         }
-        for (int pageId : pages) {
+        for (int pageNum : pages) {
             try {
-                pageBuffer.delete(pageId);
+                pageBuffer.delete(tableId, pageNum);
             } catch (IOException e) {
-                System.err.println("Error deleting page " + pageId);
+                System.err.println("Error deleting page from table " + tableId + ": " + pageNum);
                 e.printStackTrace();
             }
         }
@@ -524,14 +523,14 @@ public class StorageManager {
      * @return if the unique constraint is still valid if the record were inserted
      */
     private boolean checkUniqueConstraints(int tableId, RecordEntry record) {
-        // TODO this is really inefficient, use the index in phase 2
-        List<Integer> pageIds = catalog.getPages(tableId);
-        if (pageIds == null) {
+        // TODO this is really inefficient, use the index in phase 3
+        List<Integer> pageNums = catalog.getPages(tableId);
+        if (pageNums == null) {
             return true;
         }
         RecordCodec codec = catalog.getCodec(tableId);
-        for (int pageId : pageIds) {
-            Page page = getPage(pageId);
+        for (int pageNum : pageNums) {
+            Page page = getPage(tableId, pageNum);
             if (page == null) {
                 return false;
             }
@@ -560,14 +559,14 @@ public class StorageManager {
     }
 
     /**
-     * @param pageId the page id
+     * @param pageNum the page id
      * @return the page, or null if an error occurred
      */
-    private Page getPage(int pageId) {
+    private Page getPage(int tableId, int pageNum) {
         try {
-            return pageBuffer.get(pageId);
+            return pageBuffer.get(tableId, pageNum);
         } catch (IOException e) {
-            System.err.println("Error reading page with id " + pageId);
+            System.err.println("Error reading page with id " + pageNum);
             e.printStackTrace();
             return null;
         }
@@ -579,21 +578,21 @@ public class StorageManager {
      * @return the page, or null if an error occurred
      */
     private Page allocateNewPage(int tableId, int sortingIndex) {
-        int newPageId = catalog.requestNewPageId(tableId, sortingIndex);
+        int num = catalog.requestNewPageNum(tableId, sortingIndex);
         try {
-            return pageBuffer.get(newPageId);
+            return pageBuffer.get(tableId, num);
         } catch (IOException e) {
-            System.err.println("Error retrieving new page with id " + newPageId + " for table " + tableId);
+            System.err.println("Error retrieving new page with num " + num + " for table " + tableId);
             return null;
         }
     }
 
-    private boolean deletePage(int id) {
+    private boolean deletePage(int tableId, int pageNum) {
         try {
-            pageBuffer.delete(id);
+            pageBuffer.delete(tableId, pageNum);
             return true;
         } catch (IOException e) {
-            System.err.println("Error deleting page: " + id);
+            System.err.println("Error deleting page from table " + tableId + ": " + pageNum);
             e.printStackTrace();
             return false;
         }

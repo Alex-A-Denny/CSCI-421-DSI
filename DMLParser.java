@@ -237,7 +237,8 @@ public class DMLParser {
             }
             for (int i = 0; i < schema.sizes.size(); i++) {
                 if (schema.types.get(i) == RecordEntryType.CHAR_FIXED || schema.types.get(i) == RecordEntryType.CHAR_VAR) {
-                    if (recordValues.get(i) instanceof String s && s.getBytes().length >= schema.sizes.get(i)) {
+                    if (recordValues.get(i) instanceof String s && s.length() >= schema.sizes.get(i) / Character.BYTES) {
+                        // need to div by char bytes to compare string lengths instead of just using the raw byte amounts
                         System.err.println("Error: Value '" + recordValues.get(i) + "' is too large");
                         return;
                     }

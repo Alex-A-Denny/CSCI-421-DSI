@@ -60,15 +60,15 @@ public class Catalog {
         return pages.get(tableId);
     }
 
-    public int requestNewPageId(int tableId, int sortingIndex) {
-        int id = pageCounter++;
+    public int requestNewPageNum(int tableId, int sortingIndex) {
+        int num = pageCounter++;
         var list = pages.computeIfAbsent(tableId, (k) -> new ArrayList<>());
         if (sortingIndex == -1) {
-            list.add(id);
+            list.add(num);
         } else {
-            list.add(sortingIndex, id);
+            list.add(sortingIndex, num);
         }
-        return id;
+        return num;
     }
 
     public RecordCodec getCodec(int tableId) {

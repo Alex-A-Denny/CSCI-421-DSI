@@ -7,20 +7,14 @@ import java.util.List;
 // Author: Spencer Warren
 
 public class Page {
-    public final int id;
+    public final int tableId;
+    public final int num;
     public final ByteBuffer buf;
 
-    public Page(int id, ByteBuffer buf) {
-        this.id = id;
+    public Page(int tableId, int num, ByteBuffer buf) {
+        this.tableId = tableId;
+        this.num = num;
         this.buf = buf;
-    }
-
-    public int getId() {
-        return id;
-    }
-
-    public ByteBuffer getBuf() {
-        return buf;
     }
 
     /**
@@ -92,11 +86,11 @@ public class Page {
         if (!(obj instanceof Page page)) {
             return false;
         }
-        return id == page.id;
+        return tableId == page.tableId && num == page.num;
     }
 
     @Override
     public int hashCode() {
-        return id;
+        return tableId * 31 + num;
     }
 }

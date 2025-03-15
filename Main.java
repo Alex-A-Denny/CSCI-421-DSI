@@ -14,21 +14,14 @@ import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Arrays;
-import java.util.List;
 import java.util.Scanner;
 import catalog.Catalog;
-import page.RecordCodec;
-import page.RecordEntry;
-import page.RecordEntryType;
 import storage.PageBuffer;
 import storage.StorageManager;
-import table.TableSchema;
 
 public class Main {
 
     public static void main(String[] args) {
-        args = new String[]{"db", "50", "2"};
         if (args.length < 3) {
             System.err.println("Usage: java Main <db loc> <page size> <buffer size>");
             return;
@@ -115,29 +108,26 @@ public class Main {
                             
                         ddl.parseCreateTable(query);
                         query = "";
-                    } 
-                    if(query.toLowerCase().startsWith("drop")){
+                    } else if(query.toLowerCase().startsWith("drop")){
                         ddl.parseDropTable(query);
                         query = "";
-                    }   
-                    if(query.toLowerCase().startsWith("alter")){
+                    } else if(query.toLowerCase().startsWith("alter")){
                         ddl.parseAlterTable(query.toLowerCase());
                         query = "";
-                    }        
-                    
+                    }
                     //send to DMLParser
-                    if(query.toLowerCase().startsWith("insert")){
+                    else if(query.toLowerCase().startsWith("insert")){
 
                         dml.parseInsert(query);
                         query = "";
 
-                    }  
-                    if(query.toLowerCase().startsWith("display") ){
+                    } else if(query.toLowerCase().startsWith("display") ){
                         dml.parseDisplay(query);
                         query = "";
-                    }
-                    if(query.startsWith("select")){
+                    } else if(query.startsWith("select")){
                         dml.parseSelect(query);
+                        query = "";
+                    } else {
                         query = "";
                     }
                 }
