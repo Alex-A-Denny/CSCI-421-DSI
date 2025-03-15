@@ -19,6 +19,8 @@ import page.RecordCodec;
 import page.RecordEntry;
 import page.RecordEntryType;
 import storage.StorageManager;
+import table.PhysicalTable;
+import table.Table;
 import table.TableSchema;
 
 public class DMLParser {
@@ -29,26 +31,6 @@ public class DMLParser {
     public DMLParser(StorageManager storageManager) {
         this.storageManager = storageManager;
         this.catalog = storageManager.catalog;
-    }
-
-
-    // class Attribute{
-
-    // }
-
-    // static class CreateTable{
-    //     int id;
-    //     String tableName;
-
-    // }
-
-    static class InsertRecord {
-        String tableName;
-        String[] values;
-    }
-
-    static class SelectQuery {
-        String tableName;
     }
 
     /*public void parseCreateTable(String input) {
@@ -160,14 +142,6 @@ public class DMLParser {
     System.out.println("Table created.");
 }*/
 
-
-    // public static void parseCreateTable(String input){
-
-    //    System.out.println(input);
-    //    CreateTable ct = new CreateTable();
-    //    ct.tableName = input;
-    //}
-
     /**
      * Parses and executes an "INSERT INTO" statement.
      * @param input The raw SQL command.
@@ -246,7 +220,8 @@ public class DMLParser {
             }
 
             RecordEntry record = new RecordEntry(recordValues);
-            boolean result = storageManager.insertRecord(tableId, record);
+            Table table = new PhysicalTable(storageManager, tableId);
+            boolean result = table.insert(record);
             if (!result) {
                 return;
             }
@@ -308,8 +283,7 @@ public class DMLParser {
         }
 
         System.out.println(catalog.getCodec(tableId).schema.names);
-        storageManager.findRecords(tableId, r -> true, record -> System.out.println(record.data));
+        Table table = new PhysicalTable(storageManager, tableId);
+        table.findMatching(r -> true, r -> System.out.println(r.data));
     }
-
-    
 }

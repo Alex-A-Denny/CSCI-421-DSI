@@ -13,37 +13,11 @@ import catalog.Catalog;
 import page.RecordCodec;
 import page.RecordEntryType;
 import storage.StorageManager;
+import table.PhysicalTable;
+import table.Table;
 import table.TableSchema;
 
-
-
-
-
 public class DDLParser {
-
-
-    /*class Attribute{
-
-    }
-
-    static class CreateTable{
-        int id;
-        String tableName;
-
-    }
-
-
-   
-    public void parseCreateTable(String input) {
-        System.out.println(input);
-            CreateTable ct = new CreateTable();
-            ct.tableName = input;
-    }*/
-    
-
-
-   
-    //takes in a string
 
     private Catalog catalog;
     private StorageManager storageManager;
@@ -190,7 +164,8 @@ public class DDLParser {
         }
 
         // Drop the table
-        if (storageManager.dropTable(tableID)) {
+        Table table = new PhysicalTable(storageManager, tableID);
+        if (table.drop()) {
             System.out.println("Table '" + tableName + "' dropped successfully.");
         } else {
             System.err.println("Error: Unable to drop table: '" + tableName + "'");
@@ -238,7 +213,10 @@ public class DDLParser {
                 System.err.println("Error: No such column: " + columnName);
                 return;
             }
-            storageManager.alterDrop(tableId, columnIndex);
+            Table table = new PhysicalTable(storageManager, tableId);
+            if (table.alterDrop(columnIndex)) {
+                System.out.println("Success.");
+            }
         } else if ("add".equals(op)) {
             index = lower.indexOf(' ');
             if (index < 0) {
@@ -304,7 +282,10 @@ public class DDLParser {
                 return;
             }
             if (index < 0) {
-                storageManager.alterAdd(tableId, columnName, type, typeSize, null);
+                Table table = new PhysicalTable(storageManager, tableId);
+                if (table.alterAdd(columnName, type, typeSize, null)) {
+                    System.out.println("Success.");
+                }
             } else {
                 index = lower.indexOf("default");
                 if (index < 0) {
@@ -323,7 +304,10 @@ public class DDLParser {
                     }
                 }
 
-                storageManager.alterAdd(tableId, columnName, type, typeSize, defaultValue);
+                Table table = new PhysicalTable(storageManager, tableId);
+                if (table.alterAdd(columnName, type, typeSize, defaultValue)) {
+                    System.out.println("Success.");
+                }
             }
         } else {
             System.err.println("Error: ALTER TABLE operation must be either DROP or ADD");
