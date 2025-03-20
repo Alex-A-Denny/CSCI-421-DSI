@@ -537,13 +537,8 @@ public class Table {
      * @return the table
      */
     public static Table merge(Table a, Table b, int primaryKeyIndex) {
-        List<String> names = new ArrayList<>();
-        a.getSchema().names.stream()
-                .map(n -> a.getName() + "." + n)
-                .forEach(names::add);
-        b.getSchema().names.stream()
-                .map(n -> b.getName() + "." + n)
-                .forEach(names::add);
+        List<String> names = new ArrayList<>(a.schema.names);
+        names.addAll(b.schema.names);
         List<RecordEntryType> types = new ArrayList<>(a.schema.types);
         types.addAll(b.schema.types);
         List<Integer> sizes = new ArrayList<>(a.schema.sizes);
