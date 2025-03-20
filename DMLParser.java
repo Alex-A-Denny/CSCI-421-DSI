@@ -11,15 +11,12 @@
 import catalog.Catalog;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import page.RecordCodec;
 import page.RecordEntry;
 import page.RecordEntryType;
 import storage.StorageManager;
-import table.PhysicalTable;
 import table.Table;
 import table.TableSchema;
 
@@ -220,7 +217,7 @@ public class DMLParser {
             }
 
             RecordEntry record = new RecordEntry(recordValues);
-            Table table = new PhysicalTable(storageManager, tableId);
+            Table table = new Table(storageManager, tableId);
             boolean result = table.insert(record);
             if (!result) {
                 return;
@@ -283,7 +280,7 @@ public class DMLParser {
         }
 
         System.out.println(catalog.getCodec(tableId).schema.names);
-        Table table = new PhysicalTable(storageManager, tableId);
+        Table table = new Table(storageManager, tableId);
         table.findMatching(r -> true, r -> System.out.println(r.data));
     }
 }

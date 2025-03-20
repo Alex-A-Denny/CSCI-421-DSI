@@ -13,7 +13,6 @@ import catalog.Catalog;
 import page.RecordCodec;
 import page.RecordEntryType;
 import storage.StorageManager;
-import table.PhysicalTable;
 import table.Table;
 import table.TableSchema;
 
@@ -164,7 +163,7 @@ public class DDLParser {
         }
 
         // Drop the table
-        Table table = new PhysicalTable(storageManager, tableID);
+        Table table = new Table(storageManager, tableID);
         if (table.drop()) {
             System.out.println("Table '" + tableName + "' dropped successfully.");
         } else {
@@ -213,7 +212,7 @@ public class DDLParser {
                 System.err.println("Error: No such column: " + columnName);
                 return;
             }
-            Table table = new PhysicalTable(storageManager, tableId);
+            Table table = new Table(storageManager, tableId);
             if (table.alterDrop(columnIndex)) {
                 System.out.println("Success.");
             }
@@ -282,7 +281,7 @@ public class DDLParser {
                 return;
             }
             if (index < 0) {
-                Table table = new PhysicalTable(storageManager, tableId);
+                Table table = new Table(storageManager, tableId);
                 if (table.alterAdd(columnName, type, typeSize, null)) {
                     System.out.println("Success.");
                 }
@@ -304,7 +303,7 @@ public class DDLParser {
                     }
                 }
 
-                Table table = new PhysicalTable(storageManager, tableId);
+                Table table = new Table(storageManager, tableId);
                 if (table.alterAdd(columnName, type, typeSize, defaultValue)) {
                     System.out.println("Success.");
                 }
