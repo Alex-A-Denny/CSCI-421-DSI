@@ -122,7 +122,41 @@ public class Table {
      * @return if successful
      */
     public boolean updateMatching(Predicate<RecordEntry> predicate, Consumer<RecordEntry> updater) {
-        return false;
+        RecordCodec codec = catalog.getCodec(tableId);
+        List<Integer> pages = catalog.getPages(tableId);
+        if (pages == null) {
+            return true;
+        }
+
+        int newTableId = catalog.createTable(name + "_tmp_update", codec);
+        Table table = new Table(storageManager, newTableId);
+
+        for (int pageNum : pages) {
+            Page page = getPage(pageNum);
+            if (page == null) {
+                return false;
+            }
+            page.buf.rewind();
+
+            List<RecordEntry> entries = page.read(codec);
+            for (RecordEntry entry : entries) {
+                if (predicate.test(entry)) {
+                    updater.accept(entry);
+                }
+                table.insert(entry, true);
+            }
+            page.buf.rewind();
+        }
+
+        catalog.deleteTable(this.tableId);
+        catalog.renameTable(newTableId, name);
+        for (int pageNum : pages) {
+            if (!deletePage(pageNum)) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /**
