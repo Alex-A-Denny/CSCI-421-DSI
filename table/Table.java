@@ -127,10 +127,11 @@ public class Table {
 
     /**
      * @param record the entry to add
+     * @param checkConstraints if constraints should be checked
      * @return if successful
      */
-    public boolean insert(RecordEntry record) {
-        if (!checkConstraints(record)) {
+    public boolean insert(RecordEntry record, boolean checkConstraints) {
+        if (checkConstraints && !checkConstraints(record)) {
             return false;
         }
 
@@ -498,9 +499,10 @@ public class Table {
      * Merge two tables
      * @param a the first table
      * @param b the second table
+     * @param primaryKeyIndex the index of the primary key within the result of the merged type lists, < 0 for "none"
      * @return the table
      */
-    public static Table merge(Table a, Table b) {
+    public static Table merge(Table a, Table b, int primaryKeyIndex) {
         List<String> names = new ArrayList<>();
         a.getSchema().names.stream()
                 .map(n -> a.getName() + "." + n)
@@ -514,11 +516,15 @@ public class Table {
         sizes.addAll(b.schema.sizes);
         List<Object> defaultValues = new ArrayList<>(a.schema.defaultValues);
         defaultValues.addAll(b.schema.defaultValues);
-        List<Boolean> uniques = new ArrayList<>(a.schema.uniques);
-        uniques.addAll(b.schema.uniques);
-        List<Boolean> nullables = new ArrayList<>(a.schema.nullables);
-        nullables.addAll(b.schema.nullables);
-        TableSchema schema = new TableSchema(names, types, sizes, defaultValues, uniques, nullables, 0, false);
+        List<Boolean> uniques = new ArrayList<>();
+        for (int i = 0; i < a.schema.uniques.size() + a.schema.uniques.size(); i++) {
+            uniques.add(false);
+        }
+        List<Boolean> nullables = new ArrayList<>();
+        for (int i = 0; i < a.schema.nullables.size() + a.schema.nullables.size(); i++) {
+            uniques.add(false);
+        }
+        TableSchema schema = new TableSchema(names, types, sizes, defaultValues, uniques, nullables, primaryKeyIndex, false);
 
         int id = a.catalog.createTable("merged[" + a.getName() + "," + b.getName() + "]", new RecordCodec(schema));
         Table table = new Table(a.storageManager, id);
@@ -551,7 +557,7 @@ public class Table {
                     for (var bEntry : bEntries) {
                         List<Object> entryData = new ArrayList<>(aEntry.data);
                         entryData.addAll(bEntry.data);
-                        table.insert(new RecordEntry(entryData));
+                        table.insert(new RecordEntry(entryData), false);
                     }
                 }
             }

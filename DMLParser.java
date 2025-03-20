@@ -218,7 +218,7 @@ public class DMLParser {
 
             RecordEntry record = new RecordEntry(recordValues);
             Table table = new Table(storageManager, tableId);
-            boolean result = table.insert(record);
+            boolean result = table.insert(record, true);
             if (!result) {
                 return;
             }
