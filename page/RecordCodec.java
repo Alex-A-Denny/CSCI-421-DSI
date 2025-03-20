@@ -151,6 +151,9 @@ public class RecordCodec {
     }
 
     public int compareRecords(RecordEntry e1, RecordEntry e2) {
+        if (schema.primaryKeyIndex < 0) {
+            return -1;
+        }
         Object key1 = e1.data.get(schema.primaryKeyIndex);
         Object key2 = e2.data.get(schema.primaryKeyIndex);
         if (key1 instanceof Integer i) {
