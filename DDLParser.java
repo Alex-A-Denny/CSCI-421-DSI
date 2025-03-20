@@ -1,6 +1,6 @@
 // DDLParser.java
-// Parses user commands for insert,
-// display, and select
+// Parses user commands for create,
+// drop, alter
 //
 // Author: Alex A Denny
 //
