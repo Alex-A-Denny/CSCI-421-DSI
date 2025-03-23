@@ -265,22 +265,53 @@ public class DMLParser {
     }
 
     /**
-     * Parses and executes a "SELECT * FROM" statement.
+     * Parses and executes a "SELECT ... FROM ... WHERE ... ORDERBY ..." statement.
      * @param input The raw SQL command.
      */
     public void parseSelect(String input) {
-        input = input.trim().toLowerCase();
-        if (!input.startsWith("select * from")) return;
 
-        String tableName = input.replace("select * from", "").trim();
-        Integer tableId = catalog.getTable(tableName);
-        if (tableId == null) {
-            System.err.println("Error: No table exists with name " + tableName);
-            return;
+        input = input.trim().toLowerCase();
+        if (!input.startsWith("select")) return;
+        if (!input.contains("from")) return;
+
+        String[] subStrings = input.split(" from ", 2);
+
+        // Extract col names: 'a.1, a.2, ..., a.N'
+        String colString = subStrings[0].replace("select", "").trim();
+        String[] columnNames = colString.split(",");
+
+        String[] subStrings2 = subStrings[1].split(" where ", 2);
+
+        // Extract table names: 't_1, t_2, ..., t_N'
+        String tableString = subStrings2[0].replace("from", "").trim();
+        String[] tableNames = tableString.split(",");
+
+        String conditional = "";
+        String orderby = "";
+        if (subStrings2.length > 1) {
+            String[] subStrings3 = subStrings2[1].split(" orderby ", 2);
+
+            // Extract conditional expression following where clause
+            conditional = subStrings3[0].replace("where", "").trim();
+
+            if (subStrings3.length > 1) {
+
+                // Extract table name to orderby
+                orderby = subStrings3[1].replace("orderby", "").trim();
+            }
         }
 
-        System.out.println(catalog.getCodec(tableId).schema.names);
-        Table table = new Table(storageManager, tableId);
-        table.findMatching(r -> true, r -> System.out.println(r.data));
+        // Current variables:
+        // columnNames : String[] containing atleast 1 column to return 
+        // tableNames  : String[] containing atleast 1 table to search 
+        // conditional : String   conditional expression to test on (can be empty string if none is provided)
+        // orderby     : String   what table to order final list on (can be empty string if none is provided)
+
+        System.out.println(columnNames[0]);
+        System.out.println(tableNames[0]);
+        System.out.println(conditional);
+        System.out.println(orderby);
+
+        // TODO: Make further calls to parse from and parse where here
     }
 }
