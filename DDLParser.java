@@ -207,7 +207,7 @@ public class DDLParser {
         TableSchema schema = catalog.getCodec(tableId).schema;
         if ("drop".equals(op)) {
             String columnName = lower;
-            int columnIndex = schema.names.indexOf(columnName);
+            int columnIndex = schema.getColumnIndex(columnName);
             if (columnIndex < 0) {
                 System.err.println("Error: No such column: " + columnName);
                 return;

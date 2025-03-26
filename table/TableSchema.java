@@ -1,9 +1,7 @@
 package table;
 
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 
 import page.RecordEntryType;
 
@@ -13,6 +11,7 @@ public class TableSchema {
     public static final int MAX_COLUMNS = 32; // null bitmask is 4 bytes so we can't support more cols than that
 
     public final List<String> names;
+    private final Map<String, Integer> columns;
     public final List<RecordEntryType> types;
     public final List<Integer> sizes;
     public final List<Object> defaultValues;
@@ -28,23 +27,14 @@ public class TableSchema {
      * @param uniques the columns which must be unique
      * @param nullables the columns which can be null
      * @param primaryKeyIndex the index of the primary key
-     */
-    public TableSchema(List<String> names, List<RecordEntryType> types, List<Integer> sizes, List<Object> defaultValues, List<Boolean> uniques, List<Boolean> nullables, int primaryKeyIndex) {
-        this(names, types, sizes, defaultValues, uniques, nullables, primaryKeyIndex, true); 
-    }
-
-    /**
-     * @param names the column names for the table
-     * @param types the data types
-     * @param sizes the length of each value, use values < 0 for non string types
-     * @param defaultValues the default values for each column
-     * @param uniques the columns which must be unique
-     * @param nullables the columns which can be null
-     * @param primaryKeyIndex the index of the primary key
      * @param computeSizes if sizes should be computed
      */
     public TableSchema(List<String> names, List<RecordEntryType> types, List<Integer> sizes, List<Object> defaultValues, List<Boolean> uniques, List<Boolean> nullables, int primaryKeyIndex, boolean computeSizes) {
         this.names = names;
+        this.columns = new HashMap<>();
+        for (int i = 0; i < names.size(); i++) {
+            columns.put(names.get(i), i);
+        }
         this.types = types;
         this.sizes = sizes;
         this.defaultValues = defaultValues;
@@ -210,6 +200,14 @@ public class TableSchema {
         byte[] arr = new byte[length];
         buf.get(arr);
         return new String(arr);
+    }
+
+    /**
+     * @param columnName the name of the column
+     * @return the index of the column, otherwise -1
+     */
+    public int getColumnIndex(String columnName) {
+        return columns.getOrDefault(columnName, -1);
     }
 
     @Override
