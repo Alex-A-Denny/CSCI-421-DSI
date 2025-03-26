@@ -210,6 +210,33 @@ public class TableSchema {
         return columns.getOrDefault(columnName, -1);
     }
 
+    /**
+     * Merge two table schemas
+     * @param a the first table schema
+     * @param b the second table schema
+     * @param primaryKeyIndex the index of the primary key within the result of the merged type lists, < 0 for "none"
+     * @return the table
+     */
+    public static TableSchema merge(TableSchema a, TableSchema b, int primaryKeyIndex) {
+        List<String> names = new ArrayList<>(a.names);
+        names.addAll(b.names);
+        List<RecordEntryType> types = new ArrayList<>(a.types);
+        types.addAll(b.types);
+        List<Integer> sizes = new ArrayList<>(a.sizes);
+        sizes.addAll(b.sizes);
+        List<Object> defaultValues = new ArrayList<>(a.defaultValues);
+        defaultValues.addAll(b.defaultValues);
+        List<Boolean> uniques = new ArrayList<>();
+        for (int i = 0; i < a.uniques.size() + b.uniques.size(); i++) {
+            uniques.add(false);
+        }
+        List<Boolean> nullables = new ArrayList<>();
+        for (int i = 0; i < a.nullables.size() + b.nullables.size(); i++) {
+            uniques.add(false);
+        }
+        return new TableSchema(names, types, sizes, defaultValues, uniques, nullables, primaryKeyIndex, false);
+    }
+
     @Override
     public String toString() {
         List<String> list = new ArrayList<>(types.size());

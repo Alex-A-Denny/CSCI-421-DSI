@@ -537,23 +537,7 @@ public class Table {
      * @return the table
      */
     public static Table merge(Table a, Table b, int primaryKeyIndex) {
-        List<String> names = new ArrayList<>(a.schema.names);
-        names.addAll(b.schema.names);
-        List<RecordEntryType> types = new ArrayList<>(a.schema.types);
-        types.addAll(b.schema.types);
-        List<Integer> sizes = new ArrayList<>(a.schema.sizes);
-        sizes.addAll(b.schema.sizes);
-        List<Object> defaultValues = new ArrayList<>(a.schema.defaultValues);
-        defaultValues.addAll(b.schema.defaultValues);
-        List<Boolean> uniques = new ArrayList<>();
-        for (int i = 0; i < a.schema.uniques.size() + a.schema.uniques.size(); i++) {
-            uniques.add(false);
-        }
-        List<Boolean> nullables = new ArrayList<>();
-        for (int i = 0; i < a.schema.nullables.size() + a.schema.nullables.size(); i++) {
-            uniques.add(false);
-        }
-        TableSchema schema = new TableSchema(names, types, sizes, defaultValues, uniques, nullables, primaryKeyIndex, false);
+        TableSchema schema = TableSchema.merge(a.schema, b.schema, primaryKeyIndex);
 
         int id = a.catalog.createTable("merged[" + a.getName() + "," + b.getName() + "]", new RecordCodec(schema));
         Table table = new Table(a.storageManager, id);
