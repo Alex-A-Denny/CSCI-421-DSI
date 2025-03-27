@@ -543,7 +543,7 @@ public class Table {
             return list.get(0);
         }
         Table a = list.remove(0);
-        Table b = list.remove(1);
+        Table b = list.remove(0);
         Table merged = merge(a, b, -1);
         if (a.name.startsWith("Merged[")) {
             a.catalog.deleteTable(a.tableId);
