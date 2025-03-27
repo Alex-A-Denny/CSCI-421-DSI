@@ -2,17 +2,16 @@ package clauses;
 
 public class WhereClause {
 
-    String conditional;
-
-
+    static String conditional;
     //make a func that takes in each data entry and the table schema,
     //read each data entry and return true or false,
 
+    //table has all the rows
     
     public boolean passesConditional(){
 
 
-        conditional = "";
+        
         return true;
     }
 
@@ -24,10 +23,17 @@ public class WhereClause {
     //slect a from x, y;
     //is ambigious bc we don't know where a is from
     //should be x.a or somehting
-    public void parseWhere(String userInput){
-        conditional = "";
-        conditional = userInput;
-        System.out.println(conditional);
+    public static void parseWhere(String userInput){
+        
+        //System.out.println("where:" + conditional);
+        String[] splitStr = userInput.split(",");
+
+        for (String oneExpr : splitStr) {
+            splitStr = oneExpr.split(" ");
+            for (String spacedExpr : splitStr) {
+                System.out.println(spacedExpr);
+            }
+        }
 
     }
     

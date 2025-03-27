@@ -19,6 +19,7 @@ import page.RecordEntryType;
 import storage.StorageManager;
 import table.Table;
 import table.TableSchema;
+import clauses.WhereClause;
 
 public class DMLParser {
 
@@ -309,9 +310,11 @@ public class DMLParser {
 
         System.out.println(columnNames[0]);
         System.out.println(tableNames[0]);
-        System.out.println(conditional);
+        //System.out.println(conditional);
         System.out.println(orderby);
 
         // TODO: Make further calls to parse from and parse where here
+
+        WhereClause.parseWhere(conditional);
     }
 }
