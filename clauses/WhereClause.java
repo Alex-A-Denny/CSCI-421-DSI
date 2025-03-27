@@ -30,8 +30,8 @@ public class WhereClause {
 
         for (String oneExpr : splitStr) {
             splitStr = oneExpr.split(" ");
-            for (String spacedExpr : splitStr) {
-                System.out.println(spacedExpr);
+            for (String singleStr : splitStr) {
+                
             }
         }
 
