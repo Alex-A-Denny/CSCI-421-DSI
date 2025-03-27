@@ -20,6 +20,7 @@ import storage.StorageManager;
 import table.Table;
 import table.TableSchema;
 import clauses.WhereClause;
+import clauses.FromClause;
 
 public class DMLParser {
 
@@ -309,12 +310,13 @@ public class DMLParser {
         // orderby     : String   what table to order final list on (can be empty string if none is provided)
 
         System.out.println(columnNames[0]);
-        System.out.println(tableNames[0]);
+        //System.out.println(tableNames[0]);
         //System.out.println(conditional);
         System.out.println(orderby);
 
         // TODO: Make further calls to parse from and parse where here
 
+        Table superTable = FromClause.parseFrom(tableNames, storageManager, catalog); // Make sure to delete supertable later!
         WhereClause.parseWhere(conditional);
     }
 }
