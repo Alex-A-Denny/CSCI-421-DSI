@@ -21,13 +21,12 @@ public class FromClause {
     public static Table parseFrom(String[] tableNames, StorageManager SM, Catalog catalog) {
 
         // Get table IDs
-        //Integer[] tableIds = new Integer[tableNames.length];
         ArrayList<Integer> tableIds = new ArrayList<>();
         for (String tName : tableNames) {
-            tableIds.add(catalog.getTable(tName));
+            tableIds.add(catalog.getTable(tName.trim()));
         }
 
-        // Take IDs and store needed tables in an arraylist
+        // Using IDs, find and store needed tables in an arraylist
         ArrayList<Table> tablesToMerge = new ArrayList<>();
         for (Integer Id : tableIds) {
             Table table = new Table(SM, Id);
