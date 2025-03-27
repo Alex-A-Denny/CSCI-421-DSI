@@ -1,8 +1,18 @@
+//
+// WhereClause.java
+// Parses where clause, creates AST 
+// and determines if a given row 
+// meets where requirements
+//
+// Author: Alex A Denny
+//
+////////////////////////////////////////
+
 package clauses;
 
 public class WhereClause {
 
-    static String conditional;
+    static WhereTree conditional;
     //make a func that takes in each data entry and the table schema,
     //read each data entry and return true or false,
 
