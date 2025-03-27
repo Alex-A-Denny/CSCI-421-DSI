@@ -530,6 +530,32 @@ public class Table {
     }
 
     /**
+     * Merge N tables together
+     * @param list the list to merge, will be <strong>mutated</strong>
+     * @return the merged table, which must be deleted after use
+     */
+    public static Table mergeN(ArrayList<Table> list) {
+        if (list.isEmpty()) {
+            throw new IllegalArgumentException("cannot merge empty list of tables");
+        }
+
+        if (list.size() == 1) {
+            return list.get(0);
+        }
+        Table a = list.remove(0);
+        Table b = list.remove(1);
+        Table merged = merge(a, b, -1);
+        if (a.name.startsWith("Merged[")) {
+            a.catalog.deleteTable(a.tableId);
+        }
+        if (b.name.startsWith("Merged[")) {
+            b.catalog.deleteTable(b.tableId);
+        }
+        list.add(0, merged);
+        return mergeN(list);
+    }
+
+    /**
      * Merge two tables
      * @param a the first table
      * @param b the second table
