@@ -124,11 +124,12 @@ public class Main {
                     } else if(query.toLowerCase().startsWith("display") ){
                         dml.parseDisplay(query);
                         query = "";
-                    } else if(query.startsWith("select")){
+                    } else if(query.toLowerCase().startsWith("select")){
                         dml.parseSelect(query);
                         query = "";
                     } else {
                         query = "";
+                        System.out.println("Unknown command. Query must start with (CREATE, DROP, ALTER, INSERT, DISPLAY, or SELECT)");
                     }
                 }
             }
