@@ -309,14 +309,30 @@ public class DMLParser {
         // conditional : String   conditional expression to test on (can be empty string if none is provided)
         // orderby     : String   what table to order final list on (can be empty string if none is provided)
 
-        System.out.println(columnNames[0]);
-        //System.out.println(tableNames[0]);
+        //System.out.println(columnNames.length);
+        //System.out.println(tableNames.length);
         //System.out.println(conditional);
-        System.out.println(orderby);
+        //System.out.println(orderby);
 
-        // TODO: Make further calls to parse from and parse where here
+        // Create a temporary supertable containing all tables specified
+        Table superTable = FromClause.parseFrom(tableNames, storageManager, catalog);
 
-        Table superTable = FromClause.parseFrom(tableNames, storageManager, catalog); // Make sure to delete supertable later!
-        WhereClause.parseWhere(conditional);
+        // Select required columns from supertable
+        Table selectedTable = superTable; // TODO: SelectClause.parseSelect(superTable, columnNames)
+
+        // Evaluate table based on conditional expression
+        Table evaluatedTable = selectedTable; // TODO: WhereClause.parseWhere(conditional, selectedTable);
+
+        // Sort table based on orderby
+        Table orderedTable = evaluatedTable; // TODO: ParseOrderby(evaluatedTable, evaluatedTable);
+
+        // Print selected records
+        orderedTable.findMatching(r -> true, r -> System.out.println(r.data));
+
+        // Cleanup temporary tables
+        catalog.deleteTable(catalog.getTable(superTable.getName()));
+        //catalog.deleteTable(catalog.getTable(selectedTable.getName()));
+        //catalog.deleteTable(catalog.getTable(evaluatedTable.getName()));
+        //catalog.deleteTable(catalog.getTable(orderedTable.getName()));
     }
 }
