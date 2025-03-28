@@ -130,6 +130,10 @@ public class Main {
                     } else if (query.toLowerCase().startsWith("delete")) {
                         dml.parseDelete(query);
                         query = "";
+                    }
+                    else if (query.toLowerCase().startsWith("update")){
+                        dml.parseUpdate(query);
+                        query = "";
                     }else {
                         query = "";
                         System.out.println("Unknown command. Query must start with (CREATE, DROP, ALTER, INSERT, DISPLAY, or SELECT)");

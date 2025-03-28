@@ -8,6 +8,8 @@
 
 package clauses;
 
+import table.Table;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -91,7 +93,7 @@ public class WhereTree {
         }
     }
     
-    public static List<Token> tokenize(String input) throws Exception {
+    public static List<Token> tokenize(String input, List<Table> tables) throws Exception {
         List<Token> tokens = new ArrayList<>();
         String[] rawTokens = input.trim().split("\\s+");
 
@@ -106,7 +108,43 @@ public class WhereTree {
                 tokens.add(new Token("And/Or", token.toLowerCase()));
             } else if (token.startsWith("\"") && token.endsWith("\"")) {
                 tokens.add(new Token("Str", token));
-            } else if (token.matches("[a-zA-Z_][a-zA-Z0-9_]*")) {
+            } else if (token.matches("[a-zA-Z_|\\.][a-zA-Z0-9_|\\.]*")) {
+                int dot = token.indexOf('.');
+                if (dot < 0) {
+                    boolean found = false;
+                    for (var table : tables) {
+                        var schema = table.getSchema();
+                        int col = schema.getColumnIndex(token);
+                        if (col >= 0) {
+                            if (found) {
+                                throw new Exception("Ambiguous column in WHERE clause: " + token);
+                            }
+                            token = table.getName() + "." + token;
+                            found = true;
+                        }
+                    }
+                    if (!found) {
+                        throw new Exception("No column found in WHERE clause: " + token);
+                    }
+                } else {
+                    String tableName = token.substring(0, dot);
+                    boolean found = false;
+                    for (var table : tables) {
+                        var schema = table.getSchema();
+                        if (table.getName().equals(tableName)) {
+                            int col = schema.getColumnIndex(token);
+                            if (col >= 0) {
+                                if (found) {
+                                    throw new Exception("Ambiguous column in WHERE clause: " + token);
+                                }
+                                found = true;
+                            } else {
+                                throw new Exception("No column found in WHERE clause: " + token);
+                            }
+                        }
+                    }
+                }
+
                 tokens.add(new Token("colName", token));
             } else {
                 throw new Exception("Invalid token in WHERE clause: " + token);

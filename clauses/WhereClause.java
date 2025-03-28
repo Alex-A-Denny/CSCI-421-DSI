@@ -12,6 +12,7 @@ package clauses;
 
 import java.util.List;
 import page.RecordEntry;
+import table.Table;
 import table.TableSchema;
 
 public class WhereClause {
@@ -22,11 +23,11 @@ public class WhereClause {
         return true;
     }
 
-    public static void parseWhere(String userInput) {
+    public static void parseWhere(String userInput, List<Table> tables) {
         try {
             WhereTree.conditionalTreeRoot = null;
 
-            List<Token> tokenList = WhereTree.tokenize(userInput);
+            List<Token> tokenList = WhereTree.tokenize(userInput, tables);
 
             for (Token t : tokenList) {
                 WhereTree.buildTree(t);

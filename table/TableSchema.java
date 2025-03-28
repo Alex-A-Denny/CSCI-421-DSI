@@ -209,7 +209,14 @@ public class TableSchema {
      * @return the index of the column, otherwise -1
      */
     public int getColumnIndex(String columnName) {
-        return columns.getOrDefault(columnName, -1);
+        int index = columns.getOrDefault(columnName, -1);
+        if (index < 0) {
+            int loc = columnName.indexOf('.');
+            if (loc >= 0) {
+                index = columns.getOrDefault(columnName.substring(loc + 1), -1);
+            }
+        }
+        return index;
     }
 
     /**
