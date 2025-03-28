@@ -23,7 +23,7 @@ public class WhereClause {
         return true;
     }
 
-    public static void parseWhere(String userInput, List<Table> tables) {
+    public static boolean parseWhere(String userInput, List<Table> tables) {
         try {
             WhereTree.conditionalTreeRoot = null;
 
@@ -34,10 +34,11 @@ public class WhereClause {
             }
 
             conditionalTree = WhereTree.conditionalTreeRoot;
-
+            return true;
         } catch (Exception e) {
             System.err.println("Error parsing WHERE clause: " + e.getMessage());
-            e.printStackTrace();
+            e.printStackTrace(); // TODO remove
+            return false;
         }
     }
 

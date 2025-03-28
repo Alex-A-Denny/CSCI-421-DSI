@@ -10,10 +10,10 @@
 
 import catalog.Catalog;
 import clauses.FromClause;
+import clauses.SelectClause;
 import clauses.WhereClause;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+
+import java.util.*;
 import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -275,69 +275,84 @@ public class DMLParser {
      * @param input The raw SQL command.
      */
     public void parseSelect(String input) {
+        input = input.trim();
+        if (!input.toLowerCase().startsWith("select")) return;
+        if (!input.toLowerCase().contains("from")) return;
 
-        input = input.trim().toLowerCase();
-        if (!input.startsWith("select")) return;
-        if (!input.contains("from")) return;
-
-        String[] subStrings = input.split(" from ", 2);
-
-        // Extract col names: 'a.1, a.2, ..., a.N'
-        String colString = subStrings[0].replace("select", "").trim();
-        String[] columnNames = colString.split(",");
-
-        String[] subStrings2 = subStrings[1].split(" where ", 2);
-
-        // Extract table names: 't_1, t_2, ..., t_N'
-        String tableString = subStrings2[0].replace("from", "").trim();
-        String[] tableNames = tableString.split(",");
-
-        String conditional = "";
-        String orderby = "";
-        if (subStrings2.length > 1) {
-            String[] subStrings3 = subStrings2[1].split(" orderby ", 2);
-
-            // Extract conditional expression following where clause
-            conditional = subStrings3[0].replace("where", "").trim();
-
-            if (subStrings3.length > 1) {
-
-                // Extract table name to orderby
-                orderby = subStrings3[1].replace("orderby", "").trim();
-            }
+        String[] orderBySplit = input.split("(?i)orderby", 2);
+        String orderByRaw = null;
+        if (orderBySplit.length > 1) {
+            orderByRaw = orderBySplit[1];
+        }
+        String[] whereSplit = orderBySplit[0].split("(?i)where", 2);
+        String whereRaw = null;
+        if (whereSplit.length > 1) {
+            whereRaw = whereSplit[1];
         }
 
-        // Current variables:
-        // columnNames : String[] containing atleast 1 column to return 
-        // tableNames  : String[] containing atleast 1 table to search 
-        // conditional : String   conditional expression to test on (can be empty string if none is provided)
-        // orderby     : String   what table to order final list on (can be empty string if none is provided)
+        String[] fromSplit = whereSplit[0].split("(?i)from", 2);
+        String[] tableNames;
+        int[] tableIds;
+        if (fromSplit.length > 1) {
+            String fromRaw = fromSplit[1];
+            tableNames = fromRaw.split(",");
+            tableIds = new int[tableNames.length];
+            for (int i = 0; i < tableNames.length; i++) {
+                tableNames[i] = tableNames[i].strip();
+                Integer id = catalog.getTable(tableNames[i]);
+                if (id == null) {
+                    System.err.println("Error: no such table: " + tableNames[i]);
+                    return;
+                }
+                tableIds[i] = id;
+            }
+        } else {
+            System.err.println("Error: SELECT statement must have FROM clause");
+            return;
+        }
 
-        //System.out.println(columnNames.length);
-        //System.out.println(tableNames.length);
-        //System.out.println(conditional);
-        //System.out.println(orderby);
+        String[] selectSplit = fromSplit[0].split("(?i)select", 2);
+        String selectRaw;
+        if (selectSplit.length > 1) {
+            selectRaw = selectSplit[1];
+        } else {
+            System.err.println("Error: SELECT statement must have SELECT clause");
+            return;
+        }
 
         // Create a temporary supertable containing all tables specified
         Table superTable = FromClause.parseFrom(tableNames, storageManager, catalog);
+        if (superTable == null) {
+            return;
+        }
 
-        // Select required columns from supertable
-        Table selectedTable = superTable; // TODO: SelectClause.parseSelect(superTable, columnNames)
+        // filter selected records
+        Table selectedTable = SelectClause.parseSelect(superTable, selectRaw);
+        if (selectedTable == null) {
+            return;
+        }
 
         // Evaluate table based on conditional expression
-        Table evaluatedTable = selectedTable; // TODO: WhereClause.parseWhere(conditional, selectedTable);
+        Table evaluatedTable = selectedTable;
+        if (whereRaw != null) {
+            if (!WhereClause.parseWhere(whereRaw, Collections.singletonList(selectedTable))) {
+                return;
+            }
+            TableSchema schema = evaluatedTable.getSchema();
+            evaluatedTable = evaluatedTable.toFiltered(r -> WhereClause.passesConditional(r, schema));
+        }
 
         // Sort table based on orderby
         Table orderedTable = evaluatedTable; // TODO: ParseOrderby(evaluatedTable, evaluatedTable);
 
         // Print selected records
-        orderedTable.findMatching(r -> true, r -> System.out.println(r.data));
+        orderedTable.findMatching(r -> true, System.out::println);
 
         // Cleanup temporary tables
-        tryDeleteMergedTable(superTable, catalog);
-        tryDeleteMergedTable(selectedTable, catalog);
-        tryDeleteMergedTable(evaluatedTable, catalog);
-        tryDeleteMergedTable(orderedTable, catalog);
+        tryDeleteTempTables(superTable);
+        tryDeleteTempTables(selectedTable);
+        tryDeleteTempTables(evaluatedTable);
+        tryDeleteTempTables(orderedTable);
     }
 
     public void parseDelete(String input) {
@@ -362,7 +377,9 @@ public class DMLParser {
 
         Predicate<RecordEntry> condition;
         if (!whereCondition.isEmpty()) {
-            WhereClause.parseWhere(whereCondition, Collections.singletonList(table));
+            if (!WhereClause.parseWhere(whereCondition, Collections.singletonList(table))) {
+                return;
+            }
             condition = r -> WhereClause.passesConditional(r, schema);
         } else {
             condition = r -> true;
@@ -376,8 +393,12 @@ public class DMLParser {
         }
     }
 
-    private static void tryDeleteMergedTable(Table table, Catalog catalog) {
+    private static void tryDeleteTempTables(Table table) {
         if (table.getName().startsWith("Merged[")) {
+            table.drop();
+        } else if (table.getName().startsWith("Selected[")) {
+            table.drop();
+        } else if (table.getName().startsWith("Filtered[")) {
             table.drop();
         }
     }

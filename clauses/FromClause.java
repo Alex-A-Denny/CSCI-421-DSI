@@ -23,7 +23,12 @@ public class FromClause {
         // Get table IDs
         ArrayList<Integer> tableIds = new ArrayList<>();
         for (String tName : tableNames) {
-            tableIds.add(catalog.getTable(tName.trim()));
+            Integer Id = catalog.getTable(tName.trim());
+            if (Id == null) {
+                System.err.println("No such table: " + tName.trim());
+                return null;
+            }
+            tableIds.add(Id);
         }
 
         // Using IDs, find and store needed tables in an arraylist
