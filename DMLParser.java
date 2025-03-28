@@ -10,6 +10,7 @@
 
 import catalog.Catalog;
 import clauses.FromClause;
+import clauses.OrderbyClause;
 import clauses.SelectClause;
 import clauses.WhereClause;
 
@@ -327,7 +328,7 @@ public class DMLParser {
             return;
         }
 
-        // filter selected records
+        // filter selected columns
         Table selectedTable = SelectClause.parseSelect(superTable, selectRaw);
         if (selectedTable == null) {
             return;
@@ -344,7 +345,10 @@ public class DMLParser {
         }
 
         // Sort table based on orderby
-        Table orderedTable = evaluatedTable; // TODO: ParseOrderby(evaluatedTable, evaluatedTable);
+        Table orderedTable = evaluatedTable;
+        if (orderByRaw != null) {
+            orderedTable = OrderbyClause.parseOrderby(evaluatedTable, orderByRaw.trim(), storageManager, catalog);
+        }
 
         // Print selected records
         orderedTable.findMatching(r -> true, System.out::println);
@@ -400,6 +404,8 @@ public class DMLParser {
         } else if (table.getName().startsWith("Selected[")) {
             table.drop();
         } else if (table.getName().startsWith("Filtered[")) {
+            table.drop();
+        } else if (table.getName().startsWith("ordered[")) {
             table.drop();
         }
     }
