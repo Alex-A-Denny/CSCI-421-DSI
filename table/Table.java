@@ -49,6 +49,10 @@ public class Table {
         return schema;
     }
 
+    public int getTableId() {
+        return tableId;
+    }
+
     /**
      * @param predicate the predicate to test
      * @param operation the operation to apply to each matching entry
