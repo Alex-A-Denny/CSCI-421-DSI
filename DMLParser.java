@@ -397,7 +397,28 @@ public class DMLParser {
             return;
         }
 
+        String[] parts = query.split("(?i)where", 2);
+        String tablePart = parts[0].split("\\s+")[1].trim();
+        String whereCondition = (parts.length > 1) ? parts[1].trim() : "";
+        System.out.println(tablePart);
+        
+        
+        Integer tableId = catalog.getTable(tablePart);
+        if (tableId == null) {
+            System.err.println("Error: Table does not exist: " + tablePart);
+            return;
+        }
 
+        Table table = new Table(storageManager, tableId);
+        TableSchema schema = table.getSchema();
+
+        Predicate<RecordEntry> condition;
+    
+        WhereClause.parseWhere(whereCondition, Collections.singletonList(table));
+        condition = r -> WhereClause.passesConditional(r, schema);
+    
+        System.out.println();
+        
     }
 
 }
