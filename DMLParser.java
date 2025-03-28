@@ -333,7 +333,14 @@ public class DMLParser {
         }
 
         // Evaluate table based on conditional expression
-        Table evaluatedTable = selectedTable; // TODO: WhereClause.parseWhere(conditional, selectedTable);
+        Table evaluatedTable = selectedTable;
+        if (whereRaw != null) {
+            if (!WhereClause.parseWhere(whereRaw, Collections.singletonList(selectedTable))) {
+                return;
+            }
+            TableSchema schema = evaluatedTable.getSchema();
+            evaluatedTable = evaluatedTable.toFiltered(r -> WhereClause.passesConditional(r, schema));
+        }
 
         // Sort table based on orderby
         Table orderedTable = evaluatedTable; // TODO: ParseOrderby(evaluatedTable, evaluatedTable);
@@ -370,7 +377,9 @@ public class DMLParser {
 
         Predicate<RecordEntry> condition;
         if (!whereCondition.isEmpty()) {
-            WhereClause.parseWhere(whereCondition, Collections.singletonList(table));
+            if (!WhereClause.parseWhere(whereCondition, Collections.singletonList(table))) {
+                return;
+            }
             condition = r -> WhereClause.passesConditional(r, schema);
         } else {
             condition = r -> true;
@@ -388,6 +397,8 @@ public class DMLParser {
         if (table.getName().startsWith("Merged[")) {
             table.drop();
         } else if (table.getName().startsWith("Selected[")) {
+            table.drop();
+        } else if (table.getName().startsWith("Filtered[")) {
             table.drop();
         }
     }

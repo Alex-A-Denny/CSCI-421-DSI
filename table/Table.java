@@ -646,6 +646,33 @@ public class Table {
         }
         return result;
     }
+    /**
+     * Create a new table with only the filtered rows
+     *
+     * @param predicate the predicate for which columns should be kept
+     * @return the new table
+     */
+    public Table toFiltered(Predicate<RecordEntry> predicate) {
+        RecordCodec codec = catalog.getCodec(tableId);
+        List<Integer> pageNums = catalog.getPages(tableId);
+        if (pageNums == null) {
+            return null;
+        }
+        Table result = new Table(storageManager, catalog.createTable("Filtered[" + getName() + "]", codec));
+        for (int pageNum : pageNums) {
+            Page page = getPage(pageNum);
+            if (page == null) {
+                return null;
+            }
+            List<RecordEntry> list = page.read(codec);
+            for (var entry : list) {
+                if (predicate.test(entry)) {
+                    result.insert(entry, false);
+                }
+            }
+        }
+        return result;
+    }
 
     /**
      * Checks unique constraints for insertion into a table
