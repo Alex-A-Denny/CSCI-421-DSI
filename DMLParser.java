@@ -333,10 +333,10 @@ public class DMLParser {
         orderedTable.findMatching(r -> true, r -> System.out.println(r.data));
 
         // Cleanup temporary tables
-        catalog.deleteTable(catalog.getTable(superTable.getName()));
-        //catalog.deleteTable(catalog.getTable(selectedTable.getName()));
-        //catalog.deleteTable(catalog.getTable(evaluatedTable.getName()));
-        //catalog.deleteTable(catalog.getTable(orderedTable.getName()));
+        tryDeleteMergedTable(superTable, catalog);
+        tryDeleteMergedTable(selectedTable, catalog);
+        tryDeleteMergedTable(evaluatedTable, catalog);
+        tryDeleteMergedTable(orderedTable, catalog);
     }
 
     public void parseDelete(String input) {
@@ -375,5 +375,9 @@ public class DMLParser {
         }
     }
 
-    
+    private static void tryDeleteMergedTable(Table table, Catalog catalog) {
+        if (table.getName().startsWith("Merged[")) {
+            table.drop();
+        }
+    }
 }

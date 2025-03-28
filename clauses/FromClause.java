@@ -34,10 +34,12 @@ public class FromClause {
         }
 
         // Merge all tables together
-        Table mergedTable = Table.mergeN(tablesToMerge);
-        // ^^ This table needs to be deleted at some point after we are done with it
+        if (tablesToMerge.size() == 1) {
+            return tablesToMerge.get(0);
+        }
 
-        return mergedTable;
+        // This table needs to be deleted at some point after we are done with it
+        return Table.mergeN(tablesToMerge);
     }
 
 }
