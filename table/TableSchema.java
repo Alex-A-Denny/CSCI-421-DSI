@@ -56,7 +56,9 @@ public class TableSchema {
         if (types.size() > MAX_COLUMNS) {
             throw new IllegalArgumentException("cannot have more than " + MAX_COLUMNS + "types: " + types.size());
         }
+        if (primaryKeyIndex >= 0) {
         uniques.set(primaryKeyIndex, true);
+        }
         if (computeSizes) {
             for (int i = 0; i < sizes.size(); i++) {
                 if (sizes.get(i) < 0) {
@@ -232,7 +234,7 @@ public class TableSchema {
         }
         List<Boolean> nullables = new ArrayList<>();
         for (int i = 0; i < a.nullables.size() + b.nullables.size(); i++) {
-            uniques.add(false);
+            nullables.add(false);
         }
         return new TableSchema(names, types, sizes, defaultValues, uniques, nullables, primaryKeyIndex, false);
     }

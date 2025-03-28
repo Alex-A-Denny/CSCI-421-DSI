@@ -9,17 +9,19 @@
 ////////////////////////////////////////
 
 import catalog.Catalog;
+import clauses.FromClause;
+import clauses.WhereClause;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
 import page.RecordEntry;
 import page.RecordEntryType;
 import storage.StorageManager;
 import table.Table;
 import table.TableSchema;
-import clauses.WhereClause;
+
 
 public class DMLParser {
 
@@ -221,8 +223,10 @@ public class DMLParser {
             Table table = new Table(storageManager, tableId);
             boolean result = table.insert(record, true);
             if (!result) {
+                System.err.println("Insert failed for values: " + recordValues);
                 return;
             }
+
         }
         System.out.println("Success.");
     }
@@ -308,13 +312,72 @@ public class DMLParser {
         // conditional : String   conditional expression to test on (can be empty string if none is provided)
         // orderby     : String   what table to order final list on (can be empty string if none is provided)
 
-        System.out.println(columnNames[0]);
-        System.out.println(tableNames[0]);
+        //System.out.println(columnNames.length);
+        //System.out.println(tableNames.length);
         //System.out.println(conditional);
-        System.out.println(orderby);
+        //System.out.println(orderby);
 
-        // TODO: Make further calls to parse from and parse where here
+        // Create a temporary supertable containing all tables specified
+        Table superTable = FromClause.parseFrom(tableNames, storageManager, catalog);
 
-        WhereClause.parseWhere(conditional);
+        // Select required columns from supertable
+        Table selectedTable = superTable; // TODO: SelectClause.parseSelect(superTable, columnNames)
+
+        // Evaluate table based on conditional expression
+        Table evaluatedTable = selectedTable; // TODO: WhereClause.parseWhere(conditional, selectedTable);
+
+        // Sort table based on orderby
+        Table orderedTable = evaluatedTable; // TODO: ParseOrderby(evaluatedTable, evaluatedTable);
+
+        // Print selected records
+        orderedTable.findMatching(r -> true, r -> System.out.println(r.data));
+
+        // Cleanup temporary tables
+        tryDeleteMergedTable(superTable, catalog);
+        tryDeleteMergedTable(selectedTable, catalog);
+        tryDeleteMergedTable(evaluatedTable, catalog);
+        tryDeleteMergedTable(orderedTable, catalog);
+    }
+
+    public void parseDelete(String input) {
+        input = input.trim().toLowerCase();
+        if (!input.startsWith("delete from")) {
+            System.err.println("Error: Not a valid DELETE command");
+            return;
+        }
+
+        String[] parts = input.split("where", 2);
+        String tablePart = parts[0].replace("delete from", "").replace(";", "").trim();
+        String whereCondition = (parts.length > 1) ? parts[1].replace(";", "").trim() : "";
+
+        Integer tableId = catalog.getTable(tablePart);
+        if (tableId == null) {
+            System.err.println("Error: Table does not exist: " + tablePart);
+            return;
+        }
+
+        Table table = new Table(storageManager, tableId);
+        TableSchema schema = table.getSchema();
+
+        Predicate<RecordEntry> condition;
+        if (!whereCondition.isEmpty()) {
+            WhereClause.parseWhere(whereCondition);
+            condition = r -> WhereClause.passesConditional(r, schema);
+        } else {
+            condition = r -> true;
+        }
+
+        boolean success = table.deleteMatching(condition);
+        if (success) {
+            System.out.println("Delete operation completed successfully.");
+        } else {
+            System.err.println("Delete operation failed.");
+        }
+    }
+
+    private static void tryDeleteMergedTable(Table table, Catalog catalog) {
+        if (table.getName().startsWith("Merged[")) {
+            table.drop();
+        }
     }
 }
