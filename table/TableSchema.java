@@ -73,6 +73,10 @@ public class TableSchema {
     public TableSchema copy() {
         return new TableSchema(new ArrayList<>(names), new ArrayList<>(types), new ArrayList<>(sizes), new ArrayList<>(defaultValues), new ArrayList<>(uniques), new ArrayList<>(nullables), primaryKeyIndex, false);
     }
+    
+    public TableSchema copy(int newPrimaryKeyIndex) {
+        return new TableSchema(new ArrayList<>(names), new ArrayList<>(types), new ArrayList<>(sizes), new ArrayList<>(defaultValues), new ArrayList<>(uniques), new ArrayList<>(nullables), newPrimaryKeyIndex, false);
+    }
 
     public ByteBuffer encode() {
         int size = 1; // 1 byte for the amount of columns
