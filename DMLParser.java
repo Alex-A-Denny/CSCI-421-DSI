@@ -10,10 +10,10 @@
 
 import catalog.Catalog;
 import clauses.FromClause;
+import clauses.SelectClause;
 import clauses.WhereClause;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+
+import java.util.*;
 import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -292,11 +292,19 @@ public class DMLParser {
 
         String[] fromSplit = whereSplit[0].split("(?i)from", 2);
         String[] tableNames;
+        int[] tableIds;
         if (fromSplit.length > 1) {
             String fromRaw = fromSplit[1];
             tableNames = fromRaw.split(",");
+            tableIds = new int[tableNames.length];
             for (int i = 0; i < tableNames.length; i++) {
                 tableNames[i] = tableNames[i].strip();
+                Integer id = catalog.getTable(tableNames[i]);
+                if (id == null) {
+                    System.err.println("Error: no such table: " + tableNames[i]);
+                    return;
+                }
+                tableIds[i] = id;
             }
         } else {
             System.err.println("Error: SELECT statement must have FROM clause");
@@ -304,64 +312,25 @@ public class DMLParser {
         }
 
         String[] selectSplit = fromSplit[0].split("(?i)select", 2);
-        String[] columnNames;
+        String selectRaw;
         if (selectSplit.length > 1) {
-            String selectRaw = selectSplit[1];
-            columnNames = selectRaw.split(",");
-            for (int i = 0; i < columnNames.length; i++) {
-                String column = columnNames[i].strip();
-                if (column.equals("*")) {
-                    continue;
-                }
-                int dot = column.indexOf('.');
-                if (dot < 0) {
-                    boolean found = false;
-                    for (String tableName : tableNames) {
-                        tableName = tableName.strip();
-                        Integer id = catalog.getTable(tableName);
-                        if (id == null) {
-                            System.err.println("Error: no such table: " + tableName);
-                            return;
-                        }
-                        TableSchema schema = catalog.getCodec(id).schema;
-                        if (schema.names.contains(column)) {
-                            if (found) {
-                                System.err.println("Error: ambiguous column: " + column);
-                                return;
-                            }
-                            columnNames[i] = tableName + "." + column;
-                            found = true;
-                        }
-                    }
-                    if (!found) {
-                        System.err.println("Error: no such column exists: " + column);
-                        return;
-                    }
-                } else {
-                    String tableName = column.substring(0, dot);
-                    Integer id = catalog.getTable(tableName);
-                    if (id == null) {
-                        System.err.println("Error: no such table: " + tableName);
-                        return;
-                    }
-                    TableSchema schema = catalog.getCodec(id).schema;
-                    String columnName = column.substring(dot + 1).strip();
-                    if (!schema.names.contains(columnName)) {
-                        System.err.println("Error: no such column: " + column);
-                        return;
-                    }
-                    columnNames[i] = tableName + "." + columnName;
-                }
-            }
+            selectRaw = selectSplit[1];
         } else {
             System.err.println("Error: SELECT statement must have SELECT clause");
+            return;
         }
 
         // Create a temporary supertable containing all tables specified
         Table superTable = FromClause.parseFrom(tableNames, storageManager, catalog);
+        if (superTable == null) {
+            return;
+        }
 
-        // Select required columns from supertable
-        Table selectedTable = superTable; // TODO: SelectClause.parseSelect(superTable, columnNames)
+        // filter selected records
+        Table selectedTable = SelectClause.parseSelect(superTable, selectRaw);
+        if (selectedTable == null) {
+            return;
+        }
 
         // Evaluate table based on conditional expression
         Table evaluatedTable = selectedTable; // TODO: WhereClause.parseWhere(conditional, selectedTable);
@@ -370,13 +339,13 @@ public class DMLParser {
         Table orderedTable = evaluatedTable; // TODO: ParseOrderby(evaluatedTable, evaluatedTable);
 
         // Print selected records
-        orderedTable.findMatching(r -> true, r -> System.out.println(r.data));
+        orderedTable.findMatching(r -> true, System.out::println);
 
         // Cleanup temporary tables
-        tryDeleteMergedTable(superTable, catalog);
-        tryDeleteMergedTable(selectedTable, catalog);
-        tryDeleteMergedTable(evaluatedTable, catalog);
-        tryDeleteMergedTable(orderedTable, catalog);
+        tryDeleteTempTables(superTable);
+        tryDeleteTempTables(selectedTable);
+        tryDeleteTempTables(evaluatedTable);
+        tryDeleteTempTables(orderedTable);
     }
 
     public void parseDelete(String input) {
@@ -415,8 +384,10 @@ public class DMLParser {
         }
     }
 
-    private static void tryDeleteMergedTable(Table table, Catalog catalog) {
+    private static void tryDeleteTempTables(Table table) {
         if (table.getName().startsWith("Merged[")) {
+            table.drop();
+        } else if (table.getName().startsWith("Selected[")) {
             table.drop();
         }
     }

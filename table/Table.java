@@ -609,6 +609,45 @@ public class Table {
     }
 
     /**
+     * Create a new table with only the selected columns
+     *
+     * @param columnIndices the indices of the columns
+     * @return the new table
+     */
+    public Table toSelected(int[] columnIndices) {
+        RecordCodec codec = catalog.getCodec(tableId);
+        List<Integer> pageNums = catalog.getPages(tableId);
+        if (pageNums == null) {
+            return null;
+        }
+        List<Integer> indices = new ArrayList<>(columnIndices.length);
+        for (int i : columnIndices) {
+            indices.add(i);
+        }
+        Table result = new Table(storageManager, catalog.createTable("Selected[" + getName() + "]", new RecordCodec(TableSchema.filter(schema, indices))));
+        for (int pageNum : pageNums) {
+            Page page = getPage(pageNum);
+            if (page == null) {
+                return null;
+            }
+            List<RecordEntry> list = page.read(codec);
+            for (var entry : list) {
+                List<Object> filtered = new ArrayList<>(entry.data.size());
+                for (int i = 0; i < entry.data.size(); i++) {
+                    for (int index : columnIndices) {
+                        if (i == index) {
+                            filtered.add(entry.data.get(i));
+                            break;
+                        }
+                    }
+                }
+                result.insert(new RecordEntry(filtered), false);
+            }
+        }
+        return result;
+    }
+
+    /**
      * Checks unique constraints for insertion into a table
      *
      * @param record the record to insert

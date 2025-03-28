@@ -250,6 +250,46 @@ public class TableSchema {
         return new TableSchema(names, types, sizes, defaultValues, uniques, nullables, primaryKeyIndex, false);
     }
 
+    /**
+     * Merge two table schemas
+     * @param schema the schema
+     * @param preservedIndices the indices preserved
+     * @return the table schema filtered to the indices
+     */
+    public static TableSchema filter(TableSchema schema, List<Integer> preservedIndices) {
+        List<String> names = new ArrayList<>();
+        for (int i = 0; i < schema.names.size(); i++) {
+            if (preservedIndices.contains(i)) {
+                names.add(schema.names.get(i));
+            }
+        }
+        List<RecordEntryType> types = new ArrayList<>();
+        for (int i = 0; i < schema.types.size(); i++) {
+            if (preservedIndices.contains(i)) {
+                types.add(schema.types.get(i));
+            }
+        }
+        List<Integer> sizes = new ArrayList<>();
+        for (int i = 0; i < schema.sizes.size(); i++) {
+            if (preservedIndices.contains(i)) {
+                sizes.add(schema.sizes.get(i));
+            }
+        }
+        List<Object> defaultValues = new ArrayList<>();
+        for (int i = 0; i < schema.defaultValues.size(); i++) {
+            if (preservedIndices.contains(i)) {
+                defaultValues.add(schema.defaultValues.get(i));
+            }
+        }
+        List<Boolean> uniques = new ArrayList<>();
+        List<Boolean> nullables = new ArrayList<>();
+        for (int i = 0; i < names.size(); i++) {
+            uniques.add(false);
+            nullables.add(false);
+        }
+        return new TableSchema(names, types, sizes, defaultValues, uniques, nullables, -1, false);
+    }
+
     @Override
     public String toString() {
         List<String> list = new ArrayList<>(types.size());
