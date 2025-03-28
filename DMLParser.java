@@ -9,18 +9,19 @@
 ////////////////////////////////////////
 
 import catalog.Catalog;
+import clauses.FromClause;
+import clauses.WhereClause;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
 import page.RecordEntry;
 import page.RecordEntryType;
 import storage.StorageManager;
 import table.Table;
 import table.TableSchema;
-import clauses.WhereClause;
-import clauses.FromClause;
+
 
 public class DMLParser {
 
@@ -222,8 +223,10 @@ public class DMLParser {
             Table table = new Table(storageManager, tableId);
             boolean result = table.insert(record, true);
             if (!result) {
+                System.err.println("Insert failed for values: " + recordValues);
                 return;
             }
+
         }
         System.out.println("Success.");
     }
@@ -335,4 +338,42 @@ public class DMLParser {
         //catalog.deleteTable(catalog.getTable(evaluatedTable.getName()));
         //catalog.deleteTable(catalog.getTable(orderedTable.getName()));
     }
+
+    public void parseDelete(String input) {
+        input = input.trim().toLowerCase();
+        if (!input.startsWith("delete from")) {
+            System.err.println("Error: Not a valid DELETE command");
+            return;
+        }
+
+        String[] parts = input.split("where", 2);
+        String tablePart = parts[0].replace("delete from", "").replace(";", "").trim();
+        String whereCondition = (parts.length > 1) ? parts[1].replace(";", "").trim() : "";
+
+        Integer tableId = catalog.getTable(tablePart);
+        if (tableId == null) {
+            System.err.println("Error: Table does not exist: " + tablePart);
+            return;
+        }
+
+        Table table = new Table(storageManager, tableId);
+        TableSchema schema = table.getSchema();
+
+        Predicate<RecordEntry> condition;
+        if (!whereCondition.isEmpty()) {
+            WhereClause.parseWhere(whereCondition);
+            condition = r -> WhereClause.passesConditional(r, schema);
+        } else {
+            condition = r -> true;
+        }
+
+        boolean success = table.deleteMatching(condition);
+        if (success) {
+            System.out.println("Delete operation completed successfully.");
+        } else {
+            System.err.println("Delete operation failed.");
+        }
+    }
+
+    
 }
