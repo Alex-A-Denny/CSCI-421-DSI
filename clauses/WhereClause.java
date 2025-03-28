@@ -12,7 +12,7 @@ package clauses;
 
 public class WhereClause {
 
-    static WhereTree conditionalTree;
+    
     //make a func that takes in each data entry and the table schema,
     //read each data entry and return true or false,
 
@@ -35,16 +35,18 @@ public class WhereClause {
     //should be x.a or somehting
     public static void parseWhere(String userInput){
         try {
-            
+            WhereTree conditionalTree = null;
             String[] splitStr = userInput.split(",");
             for (String oneExpr : splitStr) {
+
                 splitStr = oneExpr.split(" ");
+
                 for (String singleStr : splitStr) {
                     WhereTree.buildTree(singleStr, conditionalTree);
                 }
             }
-
-            WhereTree.printTree(conditionalTree);
+            
+            //WhereTree.printTree(conditionalTree);
         } 
         catch (Exception e) {
             System.err.println(e.getMessage());
