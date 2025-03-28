@@ -14,6 +14,7 @@ import clauses.SelectClause;
 import clauses.WhereClause;
 
 import java.util.*;
+import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -420,9 +421,9 @@ public class DMLParser {
 
         String[] parts = query.split("(?i)where", 2);
         String tablePart = parts[0].split("\\s+")[1].trim();
+        String setString = parts[0].split("(?i)set")[1].trim();
         String whereCondition = (parts.length > 1) ? parts[1].trim() : "";
-        System.out.println(tablePart);
-        
+        System.out.println(whereCondition);
         
         Integer tableId = catalog.getTable(tablePart);
         if (tableId == null) {
@@ -431,14 +432,17 @@ public class DMLParser {
         }
 
         Table table = new Table(storageManager, tableId);
+        Table tempTable = new Table(storageManager, tableId);
         TableSchema schema = table.getSchema();
+        TableSchema tempSchema = tempTable.getSchema();
 
-        Predicate<RecordEntry> condition;
+        Predicate<RecordEntry> predicate;
+        Consumer<RecordEntry> updater;
     
         WhereClause.parseWhere(whereCondition, Collections.singletonList(table));
-        condition = r -> WhereClause.passesConditional(r, schema);
+        predicate = r -> WhereClause.passesConditional(r, schema);
     
-        System.out.println();
+        
         
     }
 
