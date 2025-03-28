@@ -380,4 +380,23 @@ public class DMLParser {
             table.drop();
         }
     }
+
+    public void parseUpdate(String query){
+        query = query.trim();
+        if(!query.toLowerCase().startsWith("update")){
+            System.err.println("Error: Not a valid UPDATE command");
+            return;
+        }
+        if(!query.toLowerCase().contains("set")){
+            System.err.println("Error: Not a valid UPDATE command, no set statement");
+            return;
+        }
+        if(!query.toLowerCase().contains("where")){
+            System.err.println("Error: Not a valid UPDATE command, no where clause");
+            return;
+        }
+
+
+    }
+
 }
