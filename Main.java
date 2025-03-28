@@ -9,13 +9,13 @@
 
 
 
+import catalog.Catalog;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Scanner;
-import catalog.Catalog;
 import storage.PageBuffer;
 import storage.StorageManager;
 
@@ -127,7 +127,10 @@ public class Main {
                     } else if(query.toLowerCase().startsWith("select")){
                         dml.parseSelect(query);
                         query = "";
-                    } else {
+                    } else if (query.toLowerCase().startsWith("delete")) {
+                        dml.parseDelete(query);
+                        query = "";
+                    }else {
                         query = "";
                         System.out.println("Unknown command. Query must start with (CREATE, DROP, ALTER, INSERT, DISPLAY, or SELECT)");
                     }
