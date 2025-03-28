@@ -1,13 +1,6 @@
 package table;
 
 import catalog.Catalog;
-import page.Page;
-import page.RecordCodec;
-import page.RecordEntry;
-import page.RecordEntryType;
-import storage.PageBuffer;
-import storage.StorageManager;
-
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -15,6 +8,12 @@ import java.util.List;
 import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
+import page.Page;
+import page.RecordCodec;
+import page.RecordEntry;
+import page.RecordEntryType;
+import storage.PageBuffer;
+import storage.StorageManager;
 
 // Author: Spencer Warren
 
