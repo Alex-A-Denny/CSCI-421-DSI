@@ -24,7 +24,9 @@ public class OrderbyClause {
      * @param SM Predefined storage manager
      * @param catalog Predefined catalog
      */
-    public Table parseOrderby(Table table, String columnName, StorageManager SM, Catalog catalog) {
+    public static Table parseOrderby(Table table, String columnName, StorageManager SM, Catalog catalog) {
+
+        if (columnName == null) return table;
         
         // Get table name, ID, schema
         String tName = table.getName();
