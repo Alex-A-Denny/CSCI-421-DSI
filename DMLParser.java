@@ -12,6 +12,7 @@ import catalog.Catalog;
 import clauses.FromClause;
 import clauses.WhereClause;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.function.Predicate;
 import java.util.regex.Matcher;
@@ -340,15 +341,15 @@ public class DMLParser {
     }
 
     public void parseDelete(String input) {
-        input = input.trim().toLowerCase();
+        input = input.trim();
         if (!input.startsWith("delete from")) {
             System.err.println("Error: Not a valid DELETE command");
             return;
         }
 
-        String[] parts = input.split("where", 2);
-        String tablePart = parts[0].replace("delete from", "").replace(";", "").trim();
-        String whereCondition = (parts.length > 1) ? parts[1].replace(";", "").trim() : "";
+        String[] parts = input.split("(?i)where", 2);
+        String tablePart = parts[0].split("(?i)delete from", 2)[1].trim();
+        String whereCondition = (parts.length > 1) ? parts[1].trim() : "";
 
         Integer tableId = catalog.getTable(tablePart);
         if (tableId == null) {
@@ -361,7 +362,7 @@ public class DMLParser {
 
         Predicate<RecordEntry> condition;
         if (!whereCondition.isEmpty()) {
-            WhereClause.parseWhere(whereCondition);
+            WhereClause.parseWhere(whereCondition, Collections.singletonList(table));
             condition = r -> WhereClause.passesConditional(r, schema);
         } else {
             condition = r -> true;
