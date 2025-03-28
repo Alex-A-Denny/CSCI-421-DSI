@@ -275,48 +275,87 @@ public class DMLParser {
      * @param input The raw SQL command.
      */
     public void parseSelect(String input) {
+        input = input.trim();
+        if (!input.toLowerCase().startsWith("select")) return;
+        if (!input.toLowerCase().contains("from")) return;
 
-        input = input.trim().toLowerCase();
-        if (!input.startsWith("select")) return;
-        if (!input.contains("from")) return;
-
-        String[] subStrings = input.split(" from ", 2);
-
-        // Extract col names: 'a.1, a.2, ..., a.N'
-        String colString = subStrings[0].replace("select", "").trim();
-        String[] columnNames = colString.split(",");
-
-        String[] subStrings2 = subStrings[1].split(" where ", 2);
-
-        // Extract table names: 't_1, t_2, ..., t_N'
-        String tableString = subStrings2[0].replace("from", "").trim();
-        String[] tableNames = tableString.split(",");
-
-        String conditional = "";
-        String orderby = "";
-        if (subStrings2.length > 1) {
-            String[] subStrings3 = subStrings2[1].split(" orderby ", 2);
-
-            // Extract conditional expression following where clause
-            conditional = subStrings3[0].replace("where", "").trim();
-
-            if (subStrings3.length > 1) {
-
-                // Extract table name to orderby
-                orderby = subStrings3[1].replace("orderby", "").trim();
-            }
+        String[] orderBySplit = input.split("(?i)orderby", 2);
+        String orderByRaw = null;
+        if (orderBySplit.length > 1) {
+            orderByRaw = orderBySplit[1];
+        }
+        String[] whereSplit = orderBySplit[0].split("(?i)where", 2);
+        String whereRaw = null;
+        if (whereSplit.length > 1) {
+            whereRaw = whereSplit[1];
         }
 
-        // Current variables:
-        // columnNames : String[] containing atleast 1 column to return 
-        // tableNames  : String[] containing atleast 1 table to search 
-        // conditional : String   conditional expression to test on (can be empty string if none is provided)
-        // orderby     : String   what table to order final list on (can be empty string if none is provided)
+        String[] fromSplit = whereSplit[0].split("(?i)from", 2);
+        String[] tableNames;
+        if (fromSplit.length > 1) {
+            String fromRaw = fromSplit[1];
+            tableNames = fromRaw.split(",");
+            for (int i = 0; i < tableNames.length; i++) {
+                tableNames[i] = tableNames[i].strip();
+            }
+        } else {
+            System.err.println("Error: SELECT statement must have FROM clause");
+            return;
+        }
 
-        //System.out.println(columnNames.length);
-        //System.out.println(tableNames.length);
-        //System.out.println(conditional);
-        //System.out.println(orderby);
+        String[] selectSplit = fromSplit[0].split("(?i)select", 2);
+        String[] columnNames;
+        if (selectSplit.length > 1) {
+            String selectRaw = selectSplit[1];
+            columnNames = selectRaw.split(",");
+            for (int i = 0; i < columnNames.length; i++) {
+                String column = columnNames[i].strip();
+                if (column.equals("*")) {
+                    continue;
+                }
+                int dot = column.indexOf('.');
+                if (dot < 0) {
+                    boolean found = false;
+                    for (String tableName : tableNames) {
+                        tableName = tableName.strip();
+                        Integer id = catalog.getTable(tableName);
+                        if (id == null) {
+                            System.err.println("Error: no such table: " + tableName);
+                            return;
+                        }
+                        TableSchema schema = catalog.getCodec(id).schema;
+                        if (schema.names.contains(column)) {
+                            if (found) {
+                                System.err.println("Error: ambiguous column: " + column);
+                                return;
+                            }
+                            columnNames[i] = tableName + "." + column;
+                            found = true;
+                        }
+                    }
+                    if (!found) {
+                        System.err.println("Error: no such column exists: " + column);
+                        return;
+                    }
+                } else {
+                    String tableName = column.substring(0, dot);
+                    Integer id = catalog.getTable(tableName);
+                    if (id == null) {
+                        System.err.println("Error: no such table: " + tableName);
+                        return;
+                    }
+                    TableSchema schema = catalog.getCodec(id).schema;
+                    String columnName = column.substring(dot + 1).strip();
+                    if (!schema.names.contains(columnName)) {
+                        System.err.println("Error: no such column: " + column);
+                        return;
+                    }
+                    columnNames[i] = tableName + "." + columnName;
+                }
+            }
+        } else {
+            System.err.println("Error: SELECT statement must have SELECT clause");
+        }
 
         // Create a temporary supertable containing all tables specified
         Table superTable = FromClause.parseFrom(tableNames, storageManager, catalog);
