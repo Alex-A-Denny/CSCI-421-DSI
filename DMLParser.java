@@ -429,7 +429,7 @@ public class DMLParser {
         String tablePart = parts[0].split("\\s+")[1].trim();
         String setString = parts[0].split("(?i)set")[1].trim();
         String whereCondition = (parts.length > 1) ? parts[1].trim() : "";
-        System.out.println(whereCondition);
+        
         
         Integer tableId = catalog.getTable(tablePart);
         if (tableId == null) {
@@ -447,14 +447,14 @@ public class DMLParser {
         Consumer<RecordEntry> updater;
     
         WhereClause.parseWhere(whereCondition, Collections.singletonList(table));
-        WhereClause.parseWhere(setString, Collections.singletonList(table));
+        WhereClause.parseWhere(setString, Collections.singletonList(tempTable));
         predicate = r -> WhereClause.passesConditional(r, schema);
         updater = r -> WhereClause.passesConditional(r, tempSchema);
 
         
         boolean success = table.updateMatching(predicate, updater);
         if (success) {
-            System.out.println("Delete operation completed successfully.");
+            System.out.println("Update operation completed successfully.");
         } else {
             System.err.println("Delete operation failed.");
         }
