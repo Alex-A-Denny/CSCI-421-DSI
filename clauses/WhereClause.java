@@ -10,6 +10,7 @@
 
 package clauses;
 
+import java.util.ArrayDeque;
 import java.util.List;
 import page.RecordEntry;
 import table.Table;
@@ -23,26 +24,67 @@ public class WhereClause {
         return true;
     }
 
-    public static boolean parseWhere(String userInput, List<Table> tables) {
+    private static int operatorPriority(List<Object> operator) {
+        Object o = operator.get(0);
+        while (o instanceof List<?> list) {
+            o = list.get(0);
+        }
+        if (o instanceof Token token) {
+            if (token.type.equals("RelOp")) {
+                return 1;
+            }
+            if (token.type.equals("And/Or")) {
+                if (token.value.equals("and")) {
+                    return 2;
+                }
+                return 3;
+            }
+        }
+        return -1;
+    }
+
+    public static WhereEvaluator parseWhere(String userInput, List<Table> tables) {
         try {
             WhereTree.conditionalTreeRoot = null;
 
             List<Token> tokenList = WhereTree.tokenize(userInput, tables);
 
+            ArrayDeque<List<Object>> operators = new ArrayDeque<>();
+            ArrayDeque<List<Object>> operands = new ArrayDeque<>();
             for (Token t : tokenList) {
-                WhereTree.buildTree(t);
-                
-                // WhereTree.printTree(WhereTree.conditionalTreeRoot);
-                // System.out.println();
+                if (t.type.equals("RelOp") || t.type.equals("And/Or")) {
+                    if (operators.isEmpty()) {
+                        operators.addLast(List.of(t));
+                    } else if (operatorPriority(operators.getLast()) < operatorPriority(List.of(t))) {
+                        var right = operands.removeLast();
+                        var left = operands.removeLast();
+                        operands.addLast(List.of(operators.removeLast(), left, right));
+                        operators.addLast(List.of(t));
+                    } else {
+                        operators.addLast(List.of(t));
+                    }
+                } else {
+                    operands.addLast(List.of(t));
+                }
             }
+            while (!operators.isEmpty()) {
+                var op = operators.removeLast();
+                var right = operands.removeLast();
+                var left = operands.removeLast();
+                operands.addLast(List.of(op, left, right));
+            }
+            return new WhereEvaluator(operands);
 
-            conditionalTree = WhereTree.conditionalTreeRoot;
-            
-            return true;
+//            for (Token t : tokenList) {
+//                WhereTree.buildTree(t);
+//            }
+//
+//            conditionalTree = WhereTree.conditionalTreeRoot;
+//            return true;
         } catch (Exception e) {
             System.err.println("Error parsing WHERE clause: " + e.getMessage());
             e.printStackTrace(); // TODO remove
-            return false;
+            return null;
         }
     }
 

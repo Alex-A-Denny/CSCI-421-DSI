@@ -331,17 +331,20 @@ public class DMLParser {
         // filter selected columns
         Table selectedTable = SelectClause.parseSelect(superTable, selectRaw);
         if (selectedTable == null) {
+            tryDeleteTempTables(superTable);
             return;
         }
 
         // Evaluate table based on conditional expression
         Table evaluatedTable = selectedTable;
         if (whereRaw != null) {
-            if (!WhereClause.parseWhere(whereRaw, Collections.singletonList(selectedTable))) {
+            var eval = WhereClause.parseWhere(whereRaw, Collections.singletonList(selectedTable));
+            if (eval == null) {
+                tryDeleteTempTables(evaluatedTable);
                 return;
             }
             TableSchema schema = evaluatedTable.getSchema();
-            evaluatedTable = evaluatedTable.toFiltered(r -> WhereClause.passesConditional(r, schema));
+            evaluatedTable = evaluatedTable.toFiltered(r -> eval.evaluate(r, schema));
         }
 
         // Sort table based on orderby
@@ -382,10 +385,11 @@ public class DMLParser {
 
         Predicate<RecordEntry> condition;
         if (!whereCondition.isEmpty()) {
-            if (!WhereClause.parseWhere(whereCondition, Collections.singletonList(table))) {
+            var eval = WhereClause.parseWhere(whereCondition, Collections.singletonList(table));
+            if (eval == null) {
                 return;
             }
-            condition = r -> WhereClause.passesConditional(r, schema);
+            condition = r -> eval.evaluate(r, schema);
         } else {
             condition = r -> true;
         }
@@ -440,7 +444,8 @@ public class DMLParser {
             return;
         }
         Table table = new Table(storageManager, tableId);
-        if (!WhereClause.parseWhere(whereCondition, Collections.singletonList(table))) {
+        var eval = WhereClause.parseWhere(whereCondition, Collections.singletonList(table));
+        if (eval == null) {
             return;
         }
 
@@ -494,7 +499,7 @@ public class DMLParser {
             return;
         }
 
-        boolean success = table.updateMatching(r -> WhereClause.passesConditional(r, table.getSchema()),
+        boolean success = table.updateMatching(r -> eval.evaluate(r, table.getSchema()),
                 r -> r.data.set(index, newValue));
         if (success) {
             System.out.println("Update operation completed successfully.");
