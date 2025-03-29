@@ -428,38 +428,77 @@ public class DMLParser {
         String[] parts = query.split("(?i)where", 2);
         String tablePart = parts[0].split("\\s+")[1].trim();
         String setString = parts[0].split("(?i)set")[1].trim();
-        String whereCondition = (parts.length > 1) ? parts[1].trim() : "";
-        
+        if (parts.length < 2) {
+            System.err.println("Error: cannot find WHERE clause");
+            return;
+        }
+        String whereCondition = parts[1].trim();
         
         Integer tableId = catalog.getTable(tablePart);
         if (tableId == null) {
             System.err.println("Error: Table does not exist: " + tablePart);
             return;
         }
-
-
         Table table = new Table(storageManager, tableId);
-        Table tempTable = new Table(storageManager, tableId);
-        TableSchema schema = table.getSchema();
-        TableSchema tempSchema = tempTable.getSchema();
+        if (!WhereClause.parseWhere(whereCondition, Collections.singletonList(table))) {
+            return;
+        }
 
-        Predicate<RecordEntry> predicate;
-        Consumer<RecordEntry> updater;
-    
-        WhereClause.parseWhere(whereCondition, Collections.singletonList(table));
-        WhereClause.parseWhere(setString, Collections.singletonList(tempTable));
-        predicate = r -> WhereClause.passesConditional(r, schema);
-        updater = r -> WhereClause.passesConditional(r, tempSchema);
+        String[] setSplit = setString.split("=", 2);
+        String columnName = setSplit[0].strip();
+        String value = setSplit[1].strip();
 
-        
-        boolean success = table.updateMatching(predicate, updater);
+        int index = table.getSchema().getColumnIndex(columnName);
+        if (index < 0) {
+            System.err.println("Error: no such column: " + columnName);
+        }
+        RecordEntryType targetType = table.getSchema().types.get(index);
+
+        Object newValue;
+        try {
+            if (value.matches("-?\\d+")) {
+                newValue = Integer.parseInt(value);
+                if (targetType != RecordEntryType.INT) {
+                    System.err.println("Error: " + RecordEntryType.INT + " cannot be set to type " + targetType);
+                    return;
+                }
+            } else if (value.matches("-?\\d+\\.\\d+")) {
+                newValue = Double.parseDouble(value);
+                if (targetType != RecordEntryType.DOUBLE) {
+                    System.err.println("Error: " + RecordEntryType.DOUBLE + " cannot be set to type " + targetType);
+                    return;
+                }
+            } else if (value.equalsIgnoreCase("true") || value.equalsIgnoreCase("false")) {
+                newValue = Boolean.parseBoolean(value);
+                if (targetType != RecordEntryType.BOOL) {
+                    System.err.println("Error: " + RecordEntryType.BOOL + " cannot be set to type " + targetType);
+                    return;
+                }
+            } else if (value.matches("\".*\"")) {
+                newValue = value.replace("\"", "");
+                if (targetType != RecordEntryType.CHAR_FIXED && targetType != RecordEntryType.CHAR_VAR) {
+                    System.err.println("Error: STRING cannot be set to type " + targetType);
+                    return;
+                }
+                if (((String) newValue).length() > table.getSchema().sizes.get(index) / Character.BYTES) {
+                    System.err.println("Error: STRING value is too long " + newValue);
+                    return;
+                }
+            } else {
+                System.err.println("Error: Could not parse value: " + value);
+                return;
+            }
+        } catch (Exception e) {
+            System.err.println("Error: Could not parse value: " + value);
+            return;
+        }
+
+        boolean success = table.updateMatching(r -> WhereClause.passesConditional(r, table.getSchema()),
+                r -> r.data.set(index, newValue));
         if (success) {
             System.out.println("Update operation completed successfully.");
         } else {
             System.err.println("Delete operation failed.");
         }
-        
-        
     }
-
 }
