@@ -451,6 +451,7 @@ public class DMLParser {
         int index = table.getSchema().getColumnIndex(columnName);
         if (index < 0) {
             System.err.println("Error: no such column: " + columnName);
+            return;
         }
         RecordEntryType targetType = table.getSchema().types.get(index);
 
