@@ -568,7 +568,7 @@ public class Table {
     public static Table merge(Table a, Table b, int primaryKeyIndex) {
         TableSchema schema = TableSchema.merge(a.schema, b.schema, primaryKeyIndex);
 
-        int id = a.catalog.createTable("merged[" + a.getName() + "," + b.getName() + "]", new RecordCodec(schema));
+        int id = a.catalog.createTable("Merged[" + a.getName() + "," + b.getName() + "]", new RecordCodec(schema));
         Table table = new Table(a.storageManager, id);
 
         // populate with all combinations of a and b
