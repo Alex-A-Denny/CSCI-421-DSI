@@ -340,6 +340,7 @@ public class DMLParser {
         if (whereRaw != null) {
             var eval = WhereClause.parseWhere(whereRaw, Collections.singletonList(selectedTable));
             if (eval == null) {
+                tryDeleteTempTables(superTable);
                 tryDeleteTempTables(evaluatedTable);
                 return;
             }
@@ -351,6 +352,11 @@ public class DMLParser {
         Table orderedTable = evaluatedTable;
         if (orderByRaw != null) {
             orderedTable = OrderbyClause.parseOrderby(evaluatedTable, orderByRaw.trim(), storageManager, catalog);
+            if (orderedTable == null) {
+                tryDeleteTempTables(superTable);
+                tryDeleteTempTables(evaluatedTable);
+                return;
+            }
         }
 
         // Print selected records
@@ -409,7 +415,7 @@ public class DMLParser {
             table.drop();
         } else if (table.getName().startsWith("Filtered[")) {
             table.drop();
-        } else if (table.getName().startsWith("ordered[")) {
+        } else if (table.getName().startsWith("Ordered[")) {
             table.drop();
         }
     }
