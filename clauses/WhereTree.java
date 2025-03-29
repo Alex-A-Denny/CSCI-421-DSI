@@ -78,7 +78,7 @@ public class WhereTree {
                     conditionalTreeRoot = newNode;
                 }
             } else if (tokenType.equals("And/Or")) {
-                if (tokenValue.equals("or") || (tokenValue.equals("and") && conditionalTreeRoot.tokenType.equals("or"))) {
+                if (tokenValue.equals("or") || (tokenValue.equals("and") /*&& conditionalTreeRoot.tokenType.equals("or")*/)) {
                     newNode.leftChild = conditionalTreeRoot;
                     conditionalTreeRoot = newNode;
                 } else {

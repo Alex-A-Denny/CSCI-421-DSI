@@ -31,9 +31,13 @@ public class WhereClause {
 
             for (Token t : tokenList) {
                 WhereTree.buildTree(t);
+                
+                // WhereTree.printTree(WhereTree.conditionalTreeRoot);
+                // System.out.println();
             }
 
             conditionalTree = WhereTree.conditionalTreeRoot;
+            
             return true;
         } catch (Exception e) {
             System.err.println("Error parsing WHERE clause: " + e.getMessage());
