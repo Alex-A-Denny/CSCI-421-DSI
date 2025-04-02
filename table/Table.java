@@ -4,6 +4,7 @@ import catalog.Catalog;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Consumer;
@@ -181,191 +182,161 @@ public class Table {
 
         List<Integer> pageNums = catalog.getPages(tableId);
         if (pageNums == null) {
-            // has no pages, allocate a new one
+            // has no pages, allocate a new one and insert immediately
             Page page = allocateNewPage(-1);
             if (page == null) {
                 return false;
             }
-            // refresh the page id list
-            pageNums = catalog.getPages(tableId);
+
+            page.buf.rewind();
+            int written = page.write(codec, Collections.singletonList(record), 0);
+            page.buf.rewind();
+            if (written != 1) {
+                throw new IllegalStateException("Could not write record to empty page");
+            }
+            return true;
         }
 
-        for (int i = 0; i < pageNums.size(); i++) {
-            int pageNum = pageNums.get(i);
+        return insertIteratePages(codec, pageNums, record, encoded);
+    }
+
+    /**
+     * Insert into the table by iterating the pages to find the insertion page and index
+     * @param codec the codec for the table
+     * @param pageNums the page numbers for the table
+     * @param toInsert the record to insert
+     * @param encoded the encoded form of the record to insert
+     * @return if insertion was successful
+     */
+    private boolean insertIteratePages(RecordCodec codec, List<Integer> pageNums, RecordEntry toInsert,
+                                       ByteBuffer encoded) {
+        int insertionPageNum = -1;
+        int insertionPageSortingIndex = -1;
+        int insertionIndex = -1;
+
+        outer:
+        for (int pageNumIndex = 0; pageNumIndex < pageNums.size(); pageNumIndex++) {
+            int pageNum = pageNums.get(pageNumIndex);
             Page page = getPage(pageNum);
             if (page == null) {
                 return false;
             }
 
-            // attempt to determine an insertion point
             page.buf.rewind();
-            int count = page.buf.getInt();
-            int insertionPoint = -1;
-            for (int j = 0; j < count; j++) {
-                int prevPos = page.buf.position();
-                RecordEntry decoded = codec.decode(page.buf);
-                if (insertionPoint == -1) {
-                    int cmp = codec.compareRecords(decoded, record);
-                    if (cmp == 0) {
-                        // same primary key, can't insert
-                        return false;
-                    }
-                    if (cmp > 0) {
-                        // shift position
-                        insertionPoint = prevPos;
-                    }
-                }
-            }
+            var records = page.read(codec);
+            page.buf.rewind();
 
-            if (insertionPoint < 0) {
-                // no insertion point found
-                if (i + 1 < pageNums.size()) {
-                    // there is another page, try that
-                    page.buf.rewind();
-                    continue;
-                } else {
-                    // no more pages
-                    if (page.buf.position() + encoded.capacity() < page.buf.capacity()) {
-                        // enough space for the record at the end, so put it there
-                        page.buf.put(encoded);
-                        page.buf.rewind();
-                        page.buf.putInt(count + 1); // update count
-                        page.buf.rewind();
-                    } else {
-                        // not enough space, need a new one
-                        page.buf.rewind();
-                        Page newPage = allocateNewPage(-1);  // -1 so it goes at the end since there is no split
-                        if (newPage == null) {
-                            return false;
-                        }
-                        newPage.buf.putInt(1); // 1 entry
-                        newPage.buf.put(encoded);
-                    }
-                    return true;
-                }
-            } else {
-                // page insertion point located
-                boolean result = shiftInsert(page.buf, encoded, insertionPoint);
-                if (!result) {
-                    // need to page split
-                    // find the halfway split point, need count + 1 because we include the entry to insert
-                    int originalPageAmount = (count + 1) / 2;
-                    page.buf.position(4); // skip over the count
-                    for (int j = 0; j < originalPageAmount; j++) {
-                        codec.decode(page.buf); // advance the buf position to the split point
-                    }
-                    int splitPoint = page.buf.position();
-
-                    // store everything to move
-                    List<RecordEntry> list = new ArrayList<>();
-                    page.buf.position(4); // skip the count
-                    for (int j = 0; j < count; j++) {
-                        RecordEntry decoded = codec.decode(page.buf);
-                        if (j >= originalPageAmount) {
-                            list.add(decoded);
-                        }
-                    }
-                    page.buf.position(splitPoint);
-                    // erase everything after the split point
-                    page.buf.put(new byte[page.buf.capacity() - splitPoint]);
-                    page.buf.rewind();
-                    page.buf.putInt(originalPageAmount); // update the count
-                    page.buf.rewind();
-
-                    Page newPage = allocateNewPage(page.num + 1);  // new page goes right after old one
-                    if (newPage == null) {
-                        return false;
-                    }
-                    newPage.buf.rewind();
-                    newPage.buf.putInt(list.size());
-                    int written = newPage.write(codec, list, 0);
-                    if (written != list.size()) {
-                        throw new IllegalStateException("Could not write half the entries to the new page");
-                    }
-
-                    if (insertionPoint < splitPoint) {
-                        // new entry is in the original page
-                        page.buf.rewind();
-                        if (shiftInsert(page.buf, encoded, insertionPoint)) {
-                            page.buf.rewind();
-                            return true;
-                        } else {
-                            throw new IllegalStateException("Unable to shiftInsert in old page after page split");
-                        }
-                    } else {
-                        // new entry is in the new page
-                        // need to compute a new insertion point in the new page
-                        newPage.buf.position(4); // skip the count
-                        insertionPoint = -1;
-                        for (int j = 0; j < list.size(); j++) {
-                            int prevPos = newPage.buf.position();
-                            RecordEntry decoded = codec.decode(newPage.buf);
-                            if (insertionPoint == -1) {
-                                int cmp = codec.compareRecords(decoded, record);
-                                if (cmp > 0) {
-                                    // shift position
-                                    insertionPoint = prevPos;
-                                }
-                            }
-                        }
-                        if (insertionPoint < 0) {
-                            // just add to the end of the page
-                            newPage.buf.put(encoded);
-                            newPage.buf.rewind();
-                            int size = newPage.buf.getInt();
-                            newPage.buf.rewind();
-                            newPage.buf.putInt(size + 1);
-                            newPage.buf.rewind();
-                            return true;
-                        } else if (shiftInsert(newPage.buf, encoded, insertionPoint)) {
-                            newPage.buf.rewind();
-                            return true;
-                        } else {
-                            throw new IllegalStateException("Unable to shiftInsert in new page after page split");
-                        }
-                    }
-                } else {
-                    return true;
+            for (int i = 0; i < records.size(); i++) {
+                RecordEntry record = records.get(i);
+                int cmp = codec.compareRecords(toInsert, record);
+                if (cmp < 0) {
+                    // first record where the record to insert is smaller
+                    insertionPageNum = pageNum;
+                    insertionPageSortingIndex = pageNumIndex;
+                    insertionIndex = i;
+                    break outer;
                 }
             }
         }
 
-        return false;
+        if (insertionIndex < 0) {
+            // never found a page to insert into, meaning this record is the biggest
+            // make a new page at the end and insert it into there
+            Page page = allocateNewPage(-1);
+            if (page == null) {
+                return false;
+            }
+            page.buf.putInt(1); // size
+            page.buf.put(encoded); // record
+            return true;
+        }
+
+        Page mainPage = getPage(insertionPageNum);
+        int currentPageBytes = mainPage.getSize(codec);
+        int insertedPageBytes = currentPageBytes + encoded.capacity();
+        if (insertedPageBytes < mainPage.buf.capacity()) {
+            // there is room to insert directly
+            insertIntoPageDirect(codec, mainPage.buf, encoded, insertionIndex);
+            return true;
+        }
+
+        // there is not enough room in the page, requiring a page split
+
+        // determine the split point
+        mainPage.buf.rewind();
+        var mainPageRecords = mainPage.read(codec);
+        mainPage.buf.rewind();
+
+        mainPageRecords.add(insertionIndex, toInsert);
+
+        // split the pages
+        int splitIndex = Math.ceilDiv(mainPageRecords.size(), 2);
+        List<RecordEntry> leftSplit = new ArrayList<>(splitIndex);
+        List<RecordEntry> rightSplit = new ArrayList<>(mainPageRecords.size() - splitIndex);
+        for (int i = 0; i < mainPageRecords.size(); i++) {
+            RecordEntry record = mainPageRecords.get(i);
+            if (i < splitIndex) {
+                leftSplit.add(record);
+            } else {
+                rightSplit.add(record);
+            }
+        }
+
+        // left page is the main page
+        mainPage.buf.put(new byte[pageBuffer.pageSize]); // wipe the current page
+        int written = mainPage.write(codec, leftSplit, 0);
+        mainPage.buf.rewind();
+        if (written != leftSplit.size()) {
+            throw new IllegalStateException("Left page did not write the expected amount of entries");
+        }
+
+        // right page is the new page
+        Page newPage = allocateNewPage(insertionPageSortingIndex + 1); // must go right after the left page
+        if (newPage == null) {
+            return false;
+        }
+        written = newPage.write(codec, rightSplit, 0);
+        newPage.buf.rewind();
+        if (written != rightSplit.size()) {
+            throw new IllegalStateException("Right page did not write the expected amount of entries");
+        }
+
+        return true;
     }
 
-    private boolean shiftInsert(ByteBuffer buf, ByteBuffer entry, int insertionPoint) {
-        if (insertionPoint < 0) {
-            if (buf.position() + entry.capacity() < buf.capacity()) {
-                // enough space for the record at the end, so put it there
-                buf.put(entry);
-                buf.rewind();
-                int size = buf.getInt();
-                buf.rewind();
-                buf.putInt(size + 1); // increase size by 1
-                buf.rewind();
-                return true;
-            }
-        } else {
-            if (buf.position() + entry.capacity() < buf.capacity()) {
-                // save everything after the insertion point
-                int shiftAmount = buf.position() - insertionPoint;
-                buf.position(insertionPoint);
-                byte[] toShift = new byte[shiftAmount];
-                buf.get(toShift);
+    /**
+     * Insert into a page directly
+     *
+     * @param codec the codec for the page
+     * @param buf the buffer for the page
+     * @param toInsert the entry to insert
+     * @param index the index in which to insert the entry
+     */
+    private void insertIntoPageDirect(RecordCodec codec, ByteBuffer buf, ByteBuffer toInsert, int index) {
+        buf.rewind();
+        int recordCount = buf.getInt();
 
-                // enough room to just shift over
-                buf.position(insertionPoint);
-                buf.put(entry);
-                buf.put(toShift);
-                buf.rewind();
-                int size = buf.getInt();
-                buf.rewind();
-                buf.putInt(size + 1); // increase size by 1
-                buf.rewind();
-                return true;
-            }
+        // advance the buffer up to the insertion point
+        for (int i = 0; i < index; i++) {
+            codec.decode(buf);
         }
-        return false;
+        int insertionBytePosition = buf.position();
+
+        // copy everything after the insertion position to a temporary buffer
+        byte[] temp = new byte[buf.capacity() - (insertionBytePosition + toInsert.capacity())];
+        buf.get(temp);
+
+        // move back to the new location to insert
+        buf.position(insertionBytePosition);
+        // insert the new entry, overwriting old data
+        buf.put(toInsert);
+        // insert the rest after the new entry, overwriting old data
+        buf.put(temp);
+        buf.rewind();
+
+        // update the record count
+        buf.putInt(recordCount + 1);
+        buf.rewind();
     }
 
     /**

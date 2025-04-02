@@ -44,6 +44,17 @@ public class Page {
         return list;
     }
 
+    public int getSize(RecordCodec codec) {
+        buf.rewind();
+        int count = buf.getInt();
+        for (int i = 0; i < count; i++) {
+            codec.decode(buf);
+        }
+        int size = buf.position();
+        buf.rewind();
+        return size;
+    }
+
     /**
      * Write the contents of the page
      * @param codec the codec for the data
