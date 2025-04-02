@@ -336,27 +336,32 @@ public class DMLParser {
         }
 
         // Evaluate table based on conditional expression
-        Table evaluatedTable = selectedTable;
+        Table filteredTable;
         if (whereRaw != null) {
             var eval = WhereClause.parseWhere(whereRaw, Collections.singletonList(selectedTable));
             if (eval == null) {
                 tryDeleteTempTables(superTable);
-                tryDeleteTempTables(evaluatedTable);
+                tryDeleteTempTables(selectedTable);
                 return;
             }
-            TableSchema schema = evaluatedTable.getSchema();
-            evaluatedTable = evaluatedTable.toFiltered(r -> eval.evaluate(r, schema));
+            TableSchema schema = selectedTable.getSchema();
+            filteredTable = selectedTable.toFiltered(r -> eval.evaluate(r, schema));
+        } else {
+            filteredTable = selectedTable;
         }
 
         // Sort table based on orderby
-        Table orderedTable = evaluatedTable;
+        Table orderedTable;
         if (orderByRaw != null) {
-            orderedTable = OrderbyClause.parseOrderby(evaluatedTable, orderByRaw.trim(), storageManager, catalog);
+            orderedTable = OrderbyClause.parseOrderby(filteredTable, orderByRaw.trim(), storageManager, catalog);
             if (orderedTable == null) {
                 tryDeleteTempTables(superTable);
-                tryDeleteTempTables(evaluatedTable);
+                tryDeleteTempTables(selectedTable);
+                tryDeleteTempTables(filteredTable);
                 return;
             }
+        } else {
+            orderedTable = filteredTable;
         }
 
         // Print selected records
@@ -366,7 +371,7 @@ public class DMLParser {
         // Cleanup temporary tables
         tryDeleteTempTables(superTable);
         tryDeleteTempTables(selectedTable);
-        tryDeleteTempTables(evaluatedTable);
+        tryDeleteTempTables(filteredTable);
         tryDeleteTempTables(orderedTable);
     }
 

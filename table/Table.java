@@ -489,6 +489,7 @@ public class Table {
     public boolean drop() {
         List<Integer> pages = catalog.getPages(tableId);
         if (pages == null) {
+            catalog.deleteTable(tableId);
             return false;
         }
         for (int pageNum : pages) {
