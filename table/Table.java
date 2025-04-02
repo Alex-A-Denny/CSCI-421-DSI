@@ -138,6 +138,7 @@ public class Table {
         for (int pageNum : pages) {
             Page page = getPage(pageNum);
             if (page == null) {
+                catalog.deleteTable(newTableId);
                 return false;
             }
             page.buf.rewind();
@@ -147,7 +148,11 @@ public class Table {
                 if (predicate.test(entry)) {
                     updater.accept(entry);
                 }
-                table.insert(entry, true);
+                boolean success = table.insert(entry, true);
+                if (!success) {
+                    catalog.deleteTable(newTableId);
+                    return false;
+                }
             }
             page.buf.rewind();
         }
