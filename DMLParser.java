@@ -346,6 +346,11 @@ public class DMLParser {
             }
             TableSchema schema = selectedTable.getSchema();
             filteredTable = selectedTable.toFiltered(r -> eval.evaluate(r, schema));
+            if (filteredTable == null) {
+                tryDeleteTempTables(superTable);
+                tryDeleteTempTables(selectedTable);
+                return;
+            }
         } else {
             filteredTable = selectedTable;
         }
@@ -401,7 +406,12 @@ public class DMLParser {
             if (eval == null) {
                 return;
             }
-            condition = r -> eval.evaluate(r, schema);
+            try {
+                condition = r -> eval.evaluate(r, schema);
+            } catch (IllegalArgumentException e) {
+                System.err.println("Error: " + e.getMessage());
+                return;
+            }
         } else {
             condition = r -> true;
         }
@@ -511,8 +521,15 @@ public class DMLParser {
             return;
         }
 
-        boolean success = table.updateMatching(r -> eval.evaluate(r, table.getSchema()),
+        boolean success;
+        try {
+            success = table.updateMatching(r -> eval.evaluate(r, table.getSchema()),
                 r -> r.data.set(index, newValue));
+        } catch (IllegalArgumentException e) {
+            System.err.println("Error: " + e.getMessage());
+            return;
+        }
+
         if (success) {
             System.out.println("Update operation completed successfully.");
         } else {

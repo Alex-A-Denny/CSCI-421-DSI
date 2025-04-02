@@ -645,7 +645,15 @@ public class Table {
             }
             List<RecordEntry> list = page.read(codec);
             for (var entry : list) {
-                if (predicate.test(entry)) {
+                boolean passes;
+                try {
+                    passes = predicate.test(entry);
+                } catch (IllegalArgumentException e) {
+                    System.err.println("Error: " + e.getMessage());
+                    result.drop();
+                    return null;
+                }
+                if (passes) {
                     result.insert(entry, false);
                 }
             }
