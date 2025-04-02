@@ -360,6 +360,7 @@ public class DMLParser {
         }
 
         // Print selected records
+        System.out.println(orderedTable.getSchema().names);
         orderedTable.findMatching(r -> true, System.out::println);
 
         // Cleanup temporary tables
