@@ -138,7 +138,7 @@ public class Table {
         for (int pageNum : pages) {
             Page page = getPage(pageNum);
             if (page == null) {
-                catalog.deleteTable(newTableId);
+                table.drop();
                 return false;
             }
             page.buf.rewind();
@@ -525,11 +525,11 @@ public class Table {
         Table a = list.remove(0);
         Table b = list.remove(0);
         Table merged = merge(a, b, -1);
-        if (a.name.startsWith("Merged[")) {
-            a.catalog.deleteTable(a.tableId);
+        if (a.getName().startsWith("Merged[")) {
+            a.drop();
         }
-        if (b.name.startsWith("Merged[")) {
-            b.catalog.deleteTable(b.tableId);
+        if (b.getName().startsWith("Merged[")) {
+            b.drop();
         }
         list.add(0, merged);
         return mergeN(list);
@@ -605,6 +605,7 @@ public class Table {
         for (int pageNum : pageNums) {
             Page page = getPage(pageNum);
             if (page == null) {
+                result.drop();
                 return null;
             }
             List<RecordEntry> list = page.read(codec);
@@ -639,6 +640,7 @@ public class Table {
         for (int pageNum : pageNums) {
             Page page = getPage(pageNum);
             if (page == null) {
+                result.drop();
                 return null;
             }
             List<RecordEntry> list = page.read(codec);
