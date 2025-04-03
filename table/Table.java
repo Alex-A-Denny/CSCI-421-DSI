@@ -275,7 +275,7 @@ public class Table {
         mainPageRecords.add(insertionIndex, toInsert);
 
         // split the pages
-        int splitIndex = Math.ceilDiv(mainPageRecords.size(), 2);
+        int splitIndex = ceilDiv(mainPageRecords.size(), 2);
         List<RecordEntry> leftSplit = new ArrayList<>(splitIndex);
         List<RecordEntry> rightSplit = new ArrayList<>(mainPageRecords.size() - splitIndex);
         for (int i = 0; i < mainPageRecords.size(); i++) {
@@ -731,5 +731,9 @@ public class Table {
      */
     private boolean deletePage(int pageNum) {
         return storageManager.deletePage(tableId, pageNum);
+    }
+
+    private int ceilDiv(int x, int y){
+        return (int) Math.ceil((double)x / (double) y);
     }
 }
