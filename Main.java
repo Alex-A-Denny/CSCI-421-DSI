@@ -22,8 +22,8 @@ import storage.StorageManager;
 public class Main {
 
     public static void main(String[] args) {
-        if (args.length < 3) {
-            System.err.println("Usage: java Main <db loc> <page size> <buffer size>");
+        if (args.length < 4) {
+            System.err.println("Usage: java Main <db loc> <page size> <buffer size> <indexing>");
             return;
         }
 
@@ -77,6 +77,11 @@ public class Main {
             catalog = new Catalog(pageSize);
         }
 
+        //Indexing
+        if(args[3].toLowerCase().equals("true")){
+            //we are using indexing
+        }
+        
         PageBuffer pageBuffer = new PageBuffer(dbPath, pageSize, pageBufferSize);
         StorageManager storageManager = new StorageManager(catalog, pageBuffer);
 
