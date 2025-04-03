@@ -95,27 +95,37 @@ public class Table {
             return true;
         }
 
+        int newTableId = catalog.createTable(name + "_tmp_delete", codec);
+        Table table = new Table(storageManager, newTableId);
+
         for (int pageNum : pages) {
             Page page = getPage(pageNum);
             if (page == null) {
+                table.drop();
                 return false;
             }
             page.buf.rewind();
 
             List<RecordEntry> entries = page.read(codec);
-            entries.removeIf(predicate);
-
-            // wipe the page
-            page.buf.rewind();
-            page.buf.put(new byte[page.buf.capacity()]);
-
-            // write the new entries to the page
-            page.buf.rewind();
-            int written = page.write(codec, entries, 0);
-            if (written != entries.size()) {
-                throw new IllegalStateException("Unable to write a subset of entries to the same page with id " + pageNum);
+            for (RecordEntry entry : entries) {
+                if (predicate.test(entry)) {
+                    continue;
+                }
+                boolean success = table.insert(entry, true);
+                if (!success) {
+                    catalog.deleteTable(newTableId);
+                    return false;
+                }
             }
             page.buf.rewind();
+        }
+
+        catalog.deleteTable(this.tableId);
+        catalog.renameTable(newTableId, name);
+        for (int pageNum : pages) {
+            if (!deletePage(pageNum)) {
+                return false;
+            }
         }
         return true;
     }
