@@ -2,14 +2,9 @@
 
 package clauses;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import catalog.Catalog;
 import storage.StorageManager;
-import page.Page;
 import page.RecordCodec;
-import page.RecordEntry;
 import table.Table;
 import table.TableSchema;
 
