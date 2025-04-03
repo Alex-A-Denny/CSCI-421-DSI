@@ -336,36 +336,47 @@ public class DMLParser {
         }
 
         // Evaluate table based on conditional expression
-        Table evaluatedTable = selectedTable;
+        Table filteredTable;
         if (whereRaw != null) {
             var eval = WhereClause.parseWhere(whereRaw, Collections.singletonList(selectedTable));
             if (eval == null) {
                 tryDeleteTempTables(superTable);
-                tryDeleteTempTables(evaluatedTable);
+                tryDeleteTempTables(selectedTable);
                 return;
             }
-            TableSchema schema = evaluatedTable.getSchema();
-            evaluatedTable = evaluatedTable.toFiltered(r -> eval.evaluate(r, schema));
+            TableSchema schema = selectedTable.getSchema();
+            filteredTable = selectedTable.toFiltered(r -> eval.evaluate(r, schema));
+            if (filteredTable == null) {
+                tryDeleteTempTables(superTable);
+                tryDeleteTempTables(selectedTable);
+                return;
+            }
+        } else {
+            filteredTable = selectedTable;
         }
 
         // Sort table based on orderby
-        Table orderedTable = evaluatedTable;
+        Table orderedTable;
         if (orderByRaw != null) {
-            orderedTable = OrderbyClause.parseOrderby(evaluatedTable, orderByRaw.trim(), storageManager, catalog);
+            orderedTable = OrderbyClause.parseOrderby(filteredTable, orderByRaw.trim(), storageManager, catalog);
             if (orderedTable == null) {
                 tryDeleteTempTables(superTable);
-                tryDeleteTempTables(evaluatedTable);
+                tryDeleteTempTables(selectedTable);
+                tryDeleteTempTables(filteredTable);
                 return;
             }
+        } else {
+            orderedTable = filteredTable;
         }
 
         // Print selected records
+        System.out.println(orderedTable.getSchema().names);
         orderedTable.findMatching(r -> true, System.out::println);
 
         // Cleanup temporary tables
         tryDeleteTempTables(superTable);
         tryDeleteTempTables(selectedTable);
-        tryDeleteTempTables(evaluatedTable);
+        tryDeleteTempTables(filteredTable);
         tryDeleteTempTables(orderedTable);
     }
 
@@ -395,7 +406,12 @@ public class DMLParser {
             if (eval == null) {
                 return;
             }
-            condition = r -> eval.evaluate(r, schema);
+            try {
+                condition = r -> eval.evaluate(r, schema);
+            } catch (IllegalArgumentException e) {
+                System.err.println("Error: " + e.getMessage());
+                return;
+            }
         } else {
             condition = r -> true;
         }
@@ -505,8 +521,15 @@ public class DMLParser {
             return;
         }
 
-        boolean success = table.updateMatching(r -> eval.evaluate(r, table.getSchema()),
+        boolean success;
+        try {
+            success = table.updateMatching(r -> eval.evaluate(r, table.getSchema()),
                 r -> r.data.set(index, newValue));
+        } catch (IllegalArgumentException e) {
+            System.err.println("Error: " + e.getMessage());
+            return;
+        }
+
         if (success) {
             System.out.println("Update operation completed successfully.");
         } else {

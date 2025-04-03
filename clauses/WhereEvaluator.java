@@ -16,15 +16,10 @@ public class WhereEvaluator {
 
     public boolean evaluate(RecordEntry record, TableSchema schema) {
         var root = tree.getFirst();
-        try {
-            return evaluate(record, schema, root);
-        } catch (Exception e) {
-            System.err.println("Error: " + e.getMessage());
-            return false;
-        }
+        return evaluate(record, schema, root);
     }
 
-    private static boolean evaluate(RecordEntry record, TableSchema schema, List<Object> node) throws Exception {
+    private static boolean evaluate(RecordEntry record, TableSchema schema, List<Object> node) {
         Object operatorRaw = node.get(0);
         List<Object> operatorList = (List<Object>) operatorRaw;
         Token operator = (Token) operatorList.get(0);
@@ -91,31 +86,31 @@ public class WhereEvaluator {
         }
     }
 
-    private static int compare(Object a, Object b) throws Exception {
+    private static int compare(Object a, Object b) {
         if (a instanceof Integer intA) {
             if (b instanceof Integer intB) {
                 return intA.compareTo(intB);
             }
-            throw new Exception("Cannot compare int to " + b.getClass().getSimpleName());
+            throw new IllegalArgumentException("Cannot compare int to " + b.getClass().getSimpleName());
         }
         if (a instanceof Double doubleA) {
             if (b instanceof Double doubleB) {
                 return doubleA.compareTo(doubleB);
             }
-            throw new Exception("Cannot compare double to " + b.getClass().getSimpleName());
+            throw new IllegalArgumentException("Cannot compare double to " + b.getClass().getSimpleName());
         }
         if (a instanceof Boolean boolA) {
             if (b instanceof Boolean boolB) {
                 return boolA.compareTo(boolB);
             }
-            throw new Exception("Cannot compare boolean to " + b.getClass().getSimpleName());
+            throw new IllegalArgumentException("Cannot compare boolean to " + b.getClass().getSimpleName());
         }
         if (a instanceof String strA) {
             if (b instanceof String strB) {
                 return strA.compareTo(strB);
             }
-            throw new Exception("Cannot compare String to " + b.getClass().getSimpleName());
+            throw new IllegalArgumentException("Cannot compare String to " + b.getClass().getSimpleName());
         }
-        throw new Exception("Table type was invalid");
+        throw new IllegalArgumentException("Table type was invalid");
     }
 }
