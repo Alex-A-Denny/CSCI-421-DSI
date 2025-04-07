@@ -400,7 +400,7 @@ public class Table {
                 entry.data.add(defaultValue);
             }
 
-            Page newPage = storageManager.allocateNewPage(id, -1);
+            Page newPage = storageManager.allocateNewTablePage(id, -1);
             if (newPage == null) {
                 return false;
             }
@@ -408,7 +408,7 @@ public class Table {
             newPage.buf.rewind();
             int written = newPage.write(codec, list, 0);
             while (written < list.size()) {
-                newPage = storageManager.allocateNewPage(id, -1);
+                newPage = storageManager.allocateNewTablePage(id, -1);
                 if (newPage == null) {
                     return false;
                 }
@@ -468,7 +468,7 @@ public class Table {
                 entry.data.remove(index);
             }
 
-            Page newPage = storageManager.allocateNewPage(id, -1);
+            Page newPage = storageManager.allocateNewTablePage(id, -1);
             if (newPage == null) {
                 return false;
             }
@@ -476,7 +476,7 @@ public class Table {
             newPage.buf.rewind();
             int written = newPage.write(codec, list, 0);
             while (written < list.size()) {
-                newPage = storageManager.allocateNewPage(id, -1);
+                newPage = storageManager.allocateNewTablePage(id, -1);
                 if (newPage == null) {
                     return false;
                 }
@@ -509,7 +509,7 @@ public class Table {
         }
         for (int pageNum : pages) {
             try {
-                pageBuffer.delete(tableId, pageNum);
+                pageBuffer.deleteTablePage(tableId, pageNum);
             } catch (IOException e) {
                 System.err.println("Error deleting page from table " + tableId + ": " + pageNum);
                 e.printStackTrace();
@@ -724,7 +724,7 @@ public class Table {
      * @return the page, or null if an error occurred
      */
     private Page getPage(int pageNum) {
-        return storageManager.getPage(tableId, pageNum);
+        return storageManager.getTablePage(tableId, pageNum);
     }
 
     /**
@@ -732,7 +732,7 @@ public class Table {
      * @return the page, or null if an error occurred
      */
     private Page allocateNewPage(int sortingIndex) {
-        return storageManager.allocateNewPage(tableId, sortingIndex);
+        return storageManager.allocateNewTablePage(tableId, sortingIndex);
     }
 
     /**
@@ -740,7 +740,7 @@ public class Table {
      * @return if successful
      */
     private boolean deletePage(int pageNum) {
-        return storageManager.deletePage(tableId, pageNum);
+        return storageManager.deleteTablePage(tableId, pageNum);
     }
 
     private int ceilDiv(int x, int y){

@@ -16,8 +16,11 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Scanner;
+
+import page.RecordCodec;
 import storage.PageBuffer;
 import storage.StorageManager;
+import table.TableSchema;
 
 public class Main {
 
@@ -78,10 +81,14 @@ public class Main {
         }
 
         //Indexing
-        if(args[3].toLowerCase().equals("true")){
-            //we are using indexing
+        try {
+            catalog.indexMode = Boolean.parseBoolean(args[3]);
+        } catch (Exception e) {
+            System.err.println("Error: Unable to parse indexing mode");
+            System.exit(1);
+            return;
         }
-        
+
         PageBuffer pageBuffer = new PageBuffer(dbPath, pageSize, pageBufferSize);
         StorageManager storageManager = new StorageManager(catalog, pageBuffer);
 

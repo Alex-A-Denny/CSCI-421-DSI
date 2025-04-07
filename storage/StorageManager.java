@@ -32,7 +32,7 @@ public class StorageManager {
 
         int sum = 0;
         for (int pageNum : pages) {
-            Page page = getPage(tableId, pageNum);
+            Page page = getTablePage(tableId, pageNum);
             if (page == null) {
                 return 0;
             }
@@ -45,12 +45,13 @@ public class StorageManager {
     }
 
     /**
+     * @param tableId the table id
      * @param pageNum the page id
      * @return the page, or null if an error occurred
      */
-    public Page getPage(int tableId, int pageNum) {
+    public Page getTablePage(int tableId, int pageNum) {
         try {
-            return pageBuffer.get(tableId, pageNum);
+            return pageBuffer.getTablePage(tableId, pageNum);
         } catch (IOException e) {
             System.err.println("Error reading page with id " + pageNum);
             e.printStackTrace();
@@ -63,19 +64,70 @@ public class StorageManager {
      * @param sortingIndex the sorting index for the page
      * @return the page, or null if an error occurred
      */
-    public Page allocateNewPage(int tableId, int sortingIndex) {
+    public Page allocateNewTablePage(int tableId, int sortingIndex) {
         int num = catalog.requestNewPageNum(tableId, sortingIndex);
         try {
-            return pageBuffer.get(tableId, num);
+            return pageBuffer.getTablePage(tableId, num);
         } catch (IOException e) {
             System.err.println("Error retrieving new page with num " + num + " for table " + tableId);
             return null;
         }
     }
 
-    public boolean deletePage(int tableId, int pageNum) {
+    /**
+     * @param tableId the table the page belongs to
+     * @param pageNum the page number to delete
+     * @return if deletion was successful
+     */
+    public boolean deleteTablePage(int tableId, int pageNum) {
         try {
-            pageBuffer.delete(tableId, pageNum);
+            pageBuffer.deleteTablePage(tableId, pageNum);
+            return true;
+        } catch (IOException e) {
+            System.err.println("Error deleting page from table " + tableId + ": " + pageNum);
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+
+    /**
+     * @param tableId the table id
+     * @param pageNum the page id
+     * @return the page, or null if an error occurred
+     */
+    public Page getIndexPage(int tableId, int pageNum) {
+        try {
+            return pageBuffer.getIndexPage(tableId, pageNum);
+        } catch (IOException e) {
+            System.err.println("Error reading page with id " + pageNum);
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    /**
+     * @param tableId the table the page belongs to
+     * @return the page, or null if an error occurred
+     */
+    public Page allocateNewIndexPage(int tableId) {
+        int num = catalog.requestNewIndexPageNum();
+        try {
+            return pageBuffer.getIndexPage(tableId, num);
+        } catch (IOException e) {
+            System.err.println("Error retrieving new page with num " + num + " for table " + tableId);
+            return null;
+        }
+    }
+
+    /**
+     * @param tableId the table the page belongs to
+     * @param pageNum the page number to delete
+     * @return if deletion was successful
+     */
+    public boolean deleteIndexPage(int tableId, int pageNum) {
+        try {
+            pageBuffer.deleteIndexPage(tableId, pageNum);
             return true;
         } catch (IOException e) {
             System.err.println("Error deleting page from table " + tableId + ": " + pageNum);

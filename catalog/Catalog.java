@@ -13,15 +13,16 @@ import table.TableSchema;
 
 public class Catalog {
 
+    public boolean indexMode;
+
     private final Map<Integer, String> tables = new HashMap<>();
     private final Map<String, Integer> tableNames = new HashMap<>();
     private final Map<Integer, RecordCodec> codecs = new HashMap<>();
     private final Map<Integer, List<Integer>> pages = new HashMap<>();
-    private final Map<Integer, Integer> bPlusRoot = new HashMap<>();//Map<tableId, pgNumber>, store the head of the tree
+    private final Map<Integer, Integer> indexByTableId = new HashMap<>();
     private final int pageSize;
     private int tableCounter = 0;
     private int pageCounter = 0;
-
 
     public Catalog(int pageSize) {
         this.pageSize = pageSize;
@@ -55,11 +56,9 @@ public class Catalog {
         tables.put(id, name);
         tableNames.put(name, id);
         codecs.put(id, codec);
-
-        if(bPlusRoot.isEmpty())
-            bPlusRoot.put(id, pageCounter);//this probably doesn't work
-
-
+        if (indexMode) {
+            indexByTableId.put(id, pageCounter++);
+        }
         return id;
     }
 
@@ -76,6 +75,18 @@ public class Catalog {
             list.add(sortingIndex, num);
         }
         return num;
+    }
+
+    public int requestNewIndexPageNum() {
+        return pageCounter++;
+    }
+
+    public int getIndexHead(int tableId) {
+        return indexByTableId.get(tableId);
+    }
+
+    public void setIndexHead(int tableId, int pageNum) {
+        indexByTableId.put(tableId, pageNum);
     }
 
     public RecordCodec getCodec(int tableId) {
@@ -140,6 +151,10 @@ public class Catalog {
             encodedPages.put(id, encoded);
             size += encoded.capacity();
         }
+        // index
+        if (indexMode) {
+            size += 4 * tables.size(); // 1 pageNum (int, 4) per table
+        }
 
         ByteBuffer buf = ByteBuffer.allocate(size);
         buf.putInt(pageSize);
@@ -153,6 +168,7 @@ public class Catalog {
             buf.put(tableName.getBytes());
             buf.put(encodedCodecs.get(tableId));
             buf.put(encodedPages.get(tableId));
+            buf.putInt(indexByTableId.get(tableId));
         }
 
         if (buf.position() != buf.capacity()) {
@@ -185,6 +201,7 @@ public class Catalog {
             if (!pages.isEmpty()) {
                 catalog.pages.put(tableId, pages);
             }
+            catalog.indexByTableId.put(tableId, buf.getInt());
         }
         return catalog;
     }

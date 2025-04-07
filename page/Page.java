@@ -9,11 +9,13 @@ import java.util.List;
 public class Page {
     public final int tableId;
     public final int num;
+    public final boolean isIndex;
     public final ByteBuffer buf;
 
-    public Page(int tableId, int num, ByteBuffer buf) {
+    public Page(int tableId, int num, boolean isIndex, ByteBuffer buf) {
         this.tableId = tableId;
         this.num = num;
+        this.isIndex = isIndex;
         this.buf = buf;
     }
 
