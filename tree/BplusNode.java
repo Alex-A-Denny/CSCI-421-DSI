@@ -25,9 +25,4 @@ public class BplusNode {
         return parentPageId;
     }
 
-    // For debugging:
-    @Override
-    public String toString() {
-        return (isLeaf ? "Leaf" : "Internal") + "Node@" + pageId + " keys=" + keys.toString();
-    }
 }
