@@ -9,7 +9,7 @@ import java.util.Map;
 import page.RecordCodec;
 import table.TableSchema;
 
-// Author: Sam Ellis, Spencer Warren
+// Author: Sam Ellis, Spencer Warren, Alex Denny
 
 public class Catalog {
 

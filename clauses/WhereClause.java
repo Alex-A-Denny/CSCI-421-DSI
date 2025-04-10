@@ -75,12 +75,7 @@ public class WhereClause {
             }
             return new WhereEvaluator(operands);
 
-//            for (Token t : tokenList) {
-//                WhereTree.buildTree(t);
-//            }
-//
-//            conditionalTree = WhereTree.conditionalTreeRoot;
-//            return true;
+
         } catch (Exception e) {
             System.err.println("Error parsing WHERE clause: " + e.getMessage());
             e.printStackTrace(); // TODO remove

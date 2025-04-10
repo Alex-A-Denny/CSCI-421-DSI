@@ -159,7 +159,6 @@ public class WhereTree {
     public static void printTree(WhereTree node)
     {
         if (node == null){
-            // System.out.println("null");
             return;
         }
 
