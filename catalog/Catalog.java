@@ -17,7 +17,7 @@ public class Catalog {
     private final Map<String, Integer> tableNames = new HashMap<>();
     private final Map<Integer, RecordCodec> codecs = new HashMap<>();
     private final Map<Integer, List<Integer>> pages = new HashMap<>();
-    private final Map<Integer, Integer> bPlusRoot = new HashMap<>();//map of tableid and pg num that store the head of the tree
+    private final Map<Integer, Integer> bPlusRoot = new HashMap<>();//Map<tableId, pgNumber>, store the head of the tree
     private final int pageSize;
     private int tableCounter = 0;
     private int pageCounter = 0;
