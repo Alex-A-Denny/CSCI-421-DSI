@@ -17,9 +17,11 @@ public class Catalog {
     private final Map<String, Integer> tableNames = new HashMap<>();
     private final Map<Integer, RecordCodec> codecs = new HashMap<>();
     private final Map<Integer, List<Integer>> pages = new HashMap<>();
+    private final Map<Integer, Integer> bPlusRoot = new HashMap<>();//map of tableid and pg num that store the head of the tree
     private final int pageSize;
     private int tableCounter = 0;
     private int pageCounter = 0;
+
 
     public Catalog(int pageSize) {
         this.pageSize = pageSize;
@@ -53,6 +55,10 @@ public class Catalog {
         tables.put(id, name);
         tableNames.put(name, id);
         codecs.put(id, codec);
+
+        bPlusRoot.put(id, pageCounter);//this probably doesn't work
+
+
         return id;
     }
 
