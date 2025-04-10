@@ -56,7 +56,8 @@ public class Catalog {
         tableNames.put(name, id);
         codecs.put(id, codec);
 
-        bPlusRoot.put(id, pageCounter);//this probably doesn't work
+        if(bPlusRoot.isEmpty())
+            bPlusRoot.put(id, pageCounter);//this probably doesn't work
 
 
         return id;
