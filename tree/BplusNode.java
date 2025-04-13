@@ -4,25 +4,47 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class BplusNode {
-    private final boolean isLeaf; // is node leaf
-    private int pageId;
-    private int parentPageId; // parent node's page ID, -1 if none
 
-    // list of keys in this node. 
-    private final List<Integer> keys;
-    // max keys (order) of the tree. zaazaa
-    private final int maxKeys;
+    public boolean isLeaf;
+    public boolean isRoot;
 
-    public boolean isLeaf() {
-        return this.isLeaf;
+    public int pageId;
+    public int parentPageId;
+
+    // The keys stored in this node.
+    public List<Comparable<?>> keys;
+    public List<Integer> children;
+
+    public List<Integer> pagePointers; 
+    public List<Integer> slotPointers;
+
+    // The next leaf pointer, if not leaf then dont use
+    public int nextLeafPageId;
+
+    public BplusNode(boolean isLeaf, boolean isRoot, int pageId) {
+        this.isLeaf = isLeaf;
+        this.isRoot = isRoot;
+        this.pageId = pageId;
+        this.parentPageId = -1;
+        this.keys = new ArrayList<>();
+        this.children = new ArrayList<>();
+        this.pagePointers = new ArrayList<>();
+        this.slotPointers = new ArrayList<>();
+        this.nextLeafPageId = -1;
     }
 
-    public int getPageId() {
-        return pageId;
+    @Override
+    public String toString() {
+        if (isLeaf) {
+            return String.format(
+                "LeafNode(page=%d, keys=%s, pagePtrs=%s, slotPtrs=%s, nextLeaf=%d, root=%s)",
+                pageId, keys, pagePointers, slotPointers, nextLeafPageId, isRoot
+            );
+        } else {
+            return String.format(
+                "InternalNode(page=%d, keys=%s, children=%s, root=%s)",
+                pageId, keys, children, isRoot
+            );
+        }
     }
-
-    public int getParentPageId() {
-        return parentPageId;
-    }
-
 }
