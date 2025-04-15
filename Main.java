@@ -21,6 +21,7 @@ import page.RecordCodec;
 import storage.PageBuffer;
 import storage.StorageManager;
 import table.TableSchema;
+import tree.BPTree;
 
 public class Main {
 
@@ -91,6 +92,11 @@ public class Main {
 
         PageBuffer pageBuffer = new PageBuffer(dbPath, pageSize, pageBufferSize);
         StorageManager storageManager = new StorageManager(catalog, pageBuffer);
+
+        if (catalog.indexMode) {
+            BPTree.catalog = catalog;
+            BPTree.storageManager = storageManager;
+        }
 
         DDLParser ddl = new DDLParser(catalog, storageManager);
         DMLParser dml = new DMLParser(storageManager);
