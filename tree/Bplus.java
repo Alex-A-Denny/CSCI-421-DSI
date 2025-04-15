@@ -8,7 +8,7 @@ public class Bplus {
      * @return
      */
     private int rootPageId;
-    private final int maxKeys;
+//    private final int maxKeys;
 
 
     public Integer calculateN(Integer maxPageSize, Integer maxKeySize) {
