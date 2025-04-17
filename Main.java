@@ -16,6 +16,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Scanner;
+import java.util.Timer;
 
 import page.RecordCodec;
 import storage.PageBuffer;
@@ -100,7 +101,8 @@ public class Main {
 
         DDLParser ddl = new DDLParser(catalog, storageManager);
         DMLParser dml = new DMLParser(storageManager);
-    
+        
+        long startTime = System.currentTimeMillis();
         try (Scanner scanner = new Scanner(System.in)) {
             
 
@@ -177,6 +179,15 @@ public class Main {
             e.printStackTrace();
             System.exit(1);
             return;
+        }
+
+        //printing timer for indexing and not
+        long endTime = System.currentTimeMillis();
+        if(catalog.indexMode){
+            System.out.println("Indexing Elapsed Time: " + (endTime - startTime));
+        }
+        else{
+            System.out.println("Non-Indexing Elapsed Time: " + (endTime - startTime));
         }
     }
 }
