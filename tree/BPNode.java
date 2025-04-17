@@ -25,6 +25,10 @@ public class BPNode {
         this.isLeaf = isLeaf;
     }
 
+    /**
+     * @param value the value to compare against
+     * @return the index of the first value which is <= the provided value
+     */
     public int findLEq(Object value) {
         for (int i = 0; i < values.size(); i++) {
             if (compare(value, values.get(i)) <= 0) {

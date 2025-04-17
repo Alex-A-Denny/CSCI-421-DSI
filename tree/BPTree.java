@@ -51,6 +51,54 @@ public class BPTree {
         }
     }
 
+    public BPPointer search(Object valueToFind) {
+        if (root == null) {
+            return null;
+        }
+        BPNode node = getNode(root.pageNum);
+        while (node.isInternal()) {
+            int index = node.findLEq(valueToFind);
+            BPPointer pointer;
+            if (index < 0) {
+                // the value was not <= anything, so take the last node
+                pointer = node.pointers.getLast();
+            } else {
+                if (node.values.get(index).equals(valueToFind)) {
+                    // are equal, use the index as-is
+                    pointer = node.pointers.get(index);
+                } else {
+                    // must be <, so get the pointer before it
+                    pointer = node.pointers.get(Math.max(0, index - 1));
+                }
+            }
+            node = getNode(pointer.pageNum);
+        }
+
+        int index = node.values.indexOf(valueToFind);
+        if (index < 0) {
+            // not found
+
+            // hack to get around search keys not actually having all values strictly <= to them on the left
+            // due to how node splitting works
+            BPPointer pointer = node.pointers.getLast();
+            if (pointer.isNull()) {
+                return null;
+            }
+            node = getNode(pointer.pageNum);
+            index = node.values.indexOf(valueToFind);
+            if (index < 0) {
+                return null;
+            }
+        }
+        BPPointer pointer = node.pointers.get(index);
+        if (pointer.isNode()) {
+            // found a pointer to the right, get the first valur there instead
+            node = getNode(pointer.pageNum);
+            return node.pointers.getFirst();
+        }
+        return pointer;
+    }
+
     public boolean insert(Object valueToInsert, BPPointer ptrToInsert) {
         if (ptrToInsert.isNull() || ptrToInsert.isNode()) {
             throw new IllegalArgumentException("Pointer cannot be null or node type");
