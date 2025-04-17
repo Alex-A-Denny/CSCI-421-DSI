@@ -99,8 +99,15 @@ public class BPTree {
                 // conflict
                 return false;
             }
+
             targetNode.values.add(index, valueToInsert);
-            targetNode.pointers.add(index, ptrToInsert);
+            if (index == 0 && targetNode.pointers.getFirst().isNull()) {
+                // special case where the bottom left of the tree contains a null pointer
+                // when nothing is less than it
+                targetNode.pointers.set(0, ptrToInsert);
+            } else {
+                targetNode.pointers.add(index, ptrToInsert);
+            }
         }
         splitRoutine(queue, pointer, targetNode);
         targetNode.save();
@@ -191,6 +198,11 @@ public class BPTree {
         } else {
             parentNode.pointers.addLast(newPointer);
         }
+    }
+
+    public boolean remove(Object valueToRemove, BPPointer ptrToInsert) {
+
+        return false;
     }
 
     private BPNode getNode(int pageNum) {
