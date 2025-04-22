@@ -102,6 +102,7 @@ public class Main {
         DDLParser ddl = new DDLParser(catalog, storageManager);
         DMLParser dml = new DMLParser(storageManager);
         
+        //set to compare time elapsed 
         long startTime = System.currentTimeMillis();
         try (Scanner scanner = new Scanner(System.in)) {
             
@@ -181,7 +182,7 @@ public class Main {
             return;
         }
 
-        //printing timer for indexing and not
+        //printing timer, special message when using indexing or not
         long endTime = System.currentTimeMillis();
         if(catalog.indexMode){
             System.out.println("Indexing Elapsed Time: " + (endTime - startTime));
