@@ -116,9 +116,9 @@ public class Main {
                 if (input.toLowerCase().equals("quit") && query.isEmpty()){
                     break;
                 }
-                //System.out.println("Input: " + input);
+                
                 query = query.concat(input + " ");
-                //System.out.println("QUERY: " + query);
+                
                 
                 if(query.strip().endsWith(";")){
                     //Input gathering done, sending user input to parsers  

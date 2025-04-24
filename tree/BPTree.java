@@ -3,6 +3,7 @@ package tree;
 import catalog.Catalog;
 import page.RecordEntryType;
 import storage.StorageManager;
+import table.TableSchema;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -17,13 +18,18 @@ public class BPTree {
     private final RecordEntryType entryType;
     private final int maxPointers;
 
+    public static int nValue;
+
     private BPPointer root = null;
 
     public BPTree(int tableId, RecordEntryType entryType, int maxPointers) {
         this.tableId = tableId;
         this.entryType = entryType;
         this.maxPointers = maxPointers;
-    }
+        
+        TableSchema schema = catalog.getCodec(tableId).schema;
+        this.nValue = (int) Math.floor((catalog.getPageSize() / (schema.sizes.get(schema.primaryKeyIndex) + 4))) - 1;//N-value of B+ Tree
+    }                                                                                        //Alex Denny
 
     public void print() {
         if (root == null) {
