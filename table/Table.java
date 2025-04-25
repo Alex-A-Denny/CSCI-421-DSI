@@ -213,7 +213,7 @@ public class Table {
             }
             if (catalog.indexMode) {
                 Object primaryKey = record.data.get(codec.schema.primaryKeyIndex);
-                BPTree tree = new BPTree(tableId, codec.schema.types.get(codec.schema.primaryKeyIndex), 5); //TODO n
+                BPTree tree = new BPTree(tableId, codec.schema.types.get(codec.schema.primaryKeyIndex));
                 return tree.insert(primaryKey, BPPointer.table(page.num, 0));
             }
             return true;
@@ -222,7 +222,7 @@ public class Table {
 
         if (catalog.indexMode) {
             Object primaryKey = record.data.get(codec.schema.primaryKeyIndex);
-            BPTree tree = new BPTree(tableId, codec.schema.types.get(codec.schema.primaryKeyIndex), 5); //TODO n
+            BPTree tree = new BPTree(tableId, codec.schema.types.get(codec.schema.primaryKeyIndex));
             BPPointer pointer = tree.search(primaryKey);
             if (pointer == null) {
                 return false;
@@ -637,7 +637,7 @@ public class Table {
             }
         }
         if (catalog.indexMode) {
-            BPTree tree = new BPTree(tableId, schema.types.get(schema.primaryKeyIndex), 5); // TODO n
+            BPTree tree = new BPTree(tableId, schema.types.get(schema.primaryKeyIndex));
             tree.drop();
         }
         catalog.deleteTable(tableId);

@@ -20,18 +20,18 @@ public class BPTree {
     private final RecordEntryType entryType;
     private final int maxPointers;
 
-    public static int nValue;
-
     private BPPointer root = null;
 
-    public BPTree(int tableId, RecordEntryType entryType, int maxPointers) {
+    public BPTree(int tableId, RecordEntryType entryType) {
         this.tableId = tableId;
         this.entryType = entryType;
-        this.maxPointers = maxPointers;
-        
+
         TableSchema schema = catalog.getCodec(tableId).schema;
-        this.nValue = (int) Math.floor((catalog.getPageSize() / (schema.sizes.get(schema.primaryKeyIndex) + 4))) - 1;//N-value of B+ Tree
-    }                                                                                        //Alex Denny
+        //N-value of B+ Tree - Alex Denny
+        // subtract 9 bytes from the page size to account for extra information written to disk in each node
+        // use +8 instead of +4 for the entry size, since each pointer is encoded as a pair of two 4-byte ints
+        this.maxPointers = (int) Math.floor((double) (catalog.getPageSize() - 9) / (schema.sizes.get(schema.primaryKeyIndex) + 8)) - 1;
+    }
 
     public void print() {
         if (root == null) {
