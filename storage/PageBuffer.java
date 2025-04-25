@@ -169,19 +169,18 @@ public class PageBuffer {
         }
     }
 
-    public void deleteIndexPage(int tableId, int pageNum) throws IOException {
-        var pages = indexMap.get(tableId);
+    public void deleteIndex(int tableId) throws IOException {
+        var pages = indexMap.remove(tableId);
         if (pages != null) {
-            Page page = pages.remove(pageNum);
-            queue.remove(page);
+            for (int pageNum : pages.keySet()) {
+                Page page = pages.remove(pageNum);
+                queue.remove(page);
+            }
         }
 
         Path pagePath = indexDir.resolve(String.valueOf(tableId));
         if (Files.exists(pagePath)) {
-            try (RandomAccessFile file = new RandomAccessFile(pagePath.toString(), "rw")) {
-                file.seek((long) pageNum * pageSize);
-                file.write(new byte[pageSize]);
-            }
+            Files.delete(pagePath);
         }
     }
 

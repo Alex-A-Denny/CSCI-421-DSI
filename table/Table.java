@@ -15,6 +15,8 @@ import page.RecordEntry;
 import page.RecordEntryType;
 import storage.PageBuffer;
 import storage.StorageManager;
+import tree.BPPointer;
+import tree.BPTree;
 
 // Author: Spencer Warren
 
@@ -209,10 +211,129 @@ public class Table {
             if (written != 1) {
                 throw new IllegalStateException("Could not write record to empty page");
             }
+            if (catalog.indexMode) {
+                Object primaryKey = record.data.get(codec.schema.primaryKeyIndex);
+                BPTree tree = new BPTree(tableId, codec.schema.types.get(codec.schema.primaryKeyIndex), 5); //TODO n
+                return tree.insert(primaryKey, BPPointer.table(page.num, 0));
+            }
             return true;
         }
 
+
+        if (catalog.indexMode) {
+            Object primaryKey = record.data.get(codec.schema.primaryKeyIndex);
+            BPTree tree = new BPTree(tableId, codec.schema.types.get(codec.schema.primaryKeyIndex), 5); //TODO n
+            BPPointer pointer = tree.search(primaryKey);
+            if (pointer == null) {
+                return false;
+            }
+            // insert
+            return insertIndexed(tree, pointer, codec, pageNums, record, encoded);
+        }
+
         return insertIteratePages(codec, pageNums, record, encoded);
+    }
+
+    /**
+     * Insert into the table using an index
+     *
+     * @param tree the BPTree for the index
+     * @param codec the codec for the table
+     * @param pageNums the page numbers for the table
+     * @param toInsert the record to insert
+     * @param encoded the encoded form of the record to insert
+     * @return if insertion was successful
+     */
+    private boolean insertIndexed(BPTree tree, BPPointer pointer, RecordCodec codec, List<Integer> pageNums, RecordEntry toInsert,
+                                  ByteBuffer encoded) {
+        int insertionPageNum = pointer.pageNum;
+        int insertionPageSortingIndex = pageNums.indexOf(insertionPageNum);
+        int insertionIndex = pointer.entryNum;
+
+        if (insertionIndex < 0) {
+            throw new IllegalStateException("Leaf node had -1 entry num");
+        }
+
+        Page mainPage = getPage(insertionPageNum);
+        int currentPageBytes = mainPage.getSize(codec);
+        int insertedPageBytes = currentPageBytes + encoded.capacity();
+        if (insertedPageBytes < mainPage.buf.capacity()) {
+            mainPage.buf.rewind();
+            var currentContent = mainPage.read(codec);
+            mainPage.buf.rewind();
+
+            RecordEntry start = currentContent.get(insertionIndex);
+            Object startPrimaryKey = start.data.get(codec.schema.primaryKeyIndex);
+            tree.update(startPrimaryKey,
+                    (ptr) -> ptr.pageNum == mainPage.num,
+                    (ptr) -> BPPointer.table(mainPage.num, ptr.entryNum + 1));
+
+            // there is room to insert directly
+            insertIntoPageDirect(codec, mainPage.buf, encoded, insertionIndex);
+
+            Object primaryKey = toInsert.data.get(codec.schema.primaryKeyIndex);
+            return tree.insert(primaryKey, BPPointer.table(mainPage.num, insertionIndex));
+        }
+
+        // there is not enough room in the page, requiring a page split
+
+        // determine the split point
+        mainPage.buf.rewind();
+        var mainPageRecords = mainPage.read(codec);
+        mainPage.buf.rewind();
+
+        mainPageRecords.add(insertionIndex, toInsert);
+
+        // split the pages
+        int splitIndex = ceilDiv(mainPageRecords.size(), 2);
+        List<RecordEntry> leftSplit = new ArrayList<>(splitIndex);
+        List<RecordEntry> rightSplit = new ArrayList<>(mainPageRecords.size() - splitIndex);
+        for (int i = 0; i < mainPageRecords.size(); i++) {
+            RecordEntry record = mainPageRecords.get(i);
+            if (i < splitIndex) {
+                leftSplit.add(record);
+            } else {
+                rightSplit.add(record);
+            }
+        }
+
+        // left page is the main page
+        mainPage.buf.put(new byte[pageBuffer.pageSize]); // wipe the current page
+        int written = mainPage.write(codec, leftSplit, 0);
+        mainPage.buf.rewind();
+        if (written != leftSplit.size()) {
+            throw new IllegalStateException("Left page did not write the expected amount of entries");
+        }
+
+        // right page is the new page
+        Page newPage = allocateNewPage(insertionPageSortingIndex + 1); // must go right after the left page
+        if (newPage == null) {
+            return false;
+        }
+        written = newPage.write(codec, rightSplit, 0);
+        newPage.buf.rewind();
+        if (written != rightSplit.size()) {
+            throw new IllegalStateException("Right page did not write the expected amount of entries");
+        }
+
+        int location = leftSplit.indexOf(toInsert);
+        if (location < 0) {
+            location = rightSplit.indexOf(toInsert);
+        }
+
+        RecordEntry start = leftSplit.get(0);
+        Object startPrimaryKey = start.data.get(codec.schema.primaryKeyIndex);
+        tree.update(startPrimaryKey,
+                (ptr) -> ptr.pageNum == mainPage.num,
+                (ptr) -> BPPointer.table(mainPage.num, ptr.entryNum + 1));
+        start = rightSplit.get(0);
+        startPrimaryKey = start.data.get(codec.schema.primaryKeyIndex);
+        tree.update(startPrimaryKey,
+                (ptr) -> ptr.pageNum == newPage.num,
+                (ptr) -> BPPointer.table(newPage.num, ptr.entryNum + 1));
+
+        Object primaryKey = toInsert.data.get(codec.schema.primaryKeyIndex);
+        return tree.insert(primaryKey, BPPointer.table(mainPage.num, location));
     }
 
     /**
@@ -515,6 +636,10 @@ public class Table {
                 e.printStackTrace();
             }
         }
+        if (catalog.indexMode) {
+            BPTree tree = new BPTree(tableId, schema.types.get(schema.primaryKeyIndex), 5); // TODO n
+            tree.drop();
+        }
         catalog.deleteTable(tableId);
         return true;
     }
@@ -678,7 +803,7 @@ public class Table {
      * @return if the unique constraint is still valid if the record were inserted
      */
     private boolean checkConstraints(RecordEntry record) {
-        // TODO this is really inefficient, use the index in phase 3
+        // TODO this is really inefficient
         List<Integer> pageNums = catalog.getPages(tableId);
         if (pageNums == null) {
             return true;

@@ -19,9 +19,11 @@ import java.util.Scanner;
 import java.util.Timer;
 
 import page.RecordCodec;
+import page.RecordEntryType;
 import storage.PageBuffer;
 import storage.StorageManager;
 import table.TableSchema;
+import tree.BPPointer;
 import tree.BPTree;
 
 public class Main {
@@ -101,8 +103,8 @@ public class Main {
 
         DDLParser ddl = new DDLParser(catalog, storageManager);
         DMLParser dml = new DMLParser(storageManager);
-        
-        //set to compare time elapsed 
+
+        //set to compare time elapsed
         long startTime = System.currentTimeMillis();
         try (Scanner scanner = new Scanner(System.in)) {
             
@@ -116,9 +118,9 @@ public class Main {
                 if (input.toLowerCase().equals("quit") && query.isEmpty()){
                     break;
                 }
-                
+
                 query = query.concat(input + " ");
-                
+
                 
                 if(query.strip().endsWith(";")){
                     //Input gathering done, sending user input to parsers  

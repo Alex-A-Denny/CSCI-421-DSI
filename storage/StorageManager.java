@@ -107,32 +107,19 @@ public class StorageManager {
     }
 
     /**
-     * @param tableId the table the page belongs to
-     * @return the page, or null if an error occurred
-     */
-    public Page allocateNewIndexPage(int tableId) {
-        int num = catalog.requestNewIndexPageNum();
-        try {
-            return pageBuffer.getIndexPage(tableId, num);
-        } catch (IOException e) {
-            System.err.println("Error retrieving new page with num " + num + " for table " + tableId);
-            return null;
-        }
-    }
-
-    /**
-     * @param tableId the table the page belongs to
-     * @param pageNum the page number to delete
+     * Delete the index for a table
+     *
+     * @param tableId the table id whose index should be deleted
      * @return if deletion was successful
      */
-    public boolean deleteIndexPage(int tableId, int pageNum) {
+    public boolean deleteIndex(int tableId) {
         try {
-            pageBuffer.deleteIndexPage(tableId, pageNum);
-            return true;
+            pageBuffer.deleteIndex(tableId);
         } catch (IOException e) {
-            System.err.println("Error deleting page from table " + tableId + ": " + pageNum);
+            System.err.println("Error deleting index for table " + tableId);
             e.printStackTrace();
             return false;
         }
+        return true;
     }
 }

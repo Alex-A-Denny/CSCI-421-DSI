@@ -8,6 +8,7 @@ import java.util.Map;
 
 import page.RecordCodec;
 import table.TableSchema;
+import tree.BPTree;
 
 // Author: Sam Ellis, Spencer Warren, Alex Denny
 
@@ -106,6 +107,7 @@ public class Catalog {
         tables.remove(tableId);
         codecs.remove(tableId);
         pages.remove(tableId);
+        indexByTableId.remove(tableId);
     }
 
     public void renameTable(int id, String name) {

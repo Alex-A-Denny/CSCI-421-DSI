@@ -8,6 +8,8 @@ import table.TableSchema;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Predicate;
+import java.util.function.UnaryOperator;
 
 public class BPTree {
 
@@ -59,7 +61,7 @@ public class BPTree {
 
     public BPPointer search(Object valueToFind) {
         if (root == null) {
-            return null;
+            root = BPPointer.node(catalog.getIndexHead(tableId));
         }
         BPNode node = getNode(root.pageNum);
         while (node.isInternal()) {
@@ -88,17 +90,41 @@ public class BPTree {
             // due to how node splitting works
             BPPointer pointer = node.pointers.getLast();
             if (pointer.isNull()) {
-                return null;
+                index = node.findLEq(valueToFind);
+                return node.pointers.get(index);
             }
-            node = getNode(pointer.pageNum);
-            index = node.values.indexOf(valueToFind);
-            if (index < 0) {
-                return null;
+            if (pointer.isNode()) {
+                BPNode nextNode = getNode(pointer.pageNum);
+                index = nextNode.values.indexOf(valueToFind);
+                if (index < 0) {
+                    index = node.findLEq(valueToFind);
+                    if (index < 0) {
+                        return node.pointers.get(node.pointers.size() - 2);
+                    }
+                    if (node.pointers.get(index).isNode()) {
+                        node = getNode(node.pointers.get(index).pageNum);
+                        return node.pointers.getFirst();
+                    }
+                    return node.pointers.get(index);
+                }
+                node = nextNode;
+            } else {
+                index = node.findLEq(valueToFind);
+                if (index < 0) {
+                    index = node.values.size() - 1;
+                }
             }
         }
         BPPointer pointer = node.pointers.get(index);
+        if (pointer.isNull()) {
+            if (index + 1 < node.pointers.size()) {
+                pointer = node.pointers.get(index + 1);
+            } else {
+                pointer = node.pointers.get(node.pointers.size() - 2);
+            }
+        }
         if (pointer.isNode()) {
-            // found a pointer to the right, get the first valur there instead
+            // found a pointer to the right, get the first value there instead
             node = getNode(pointer.pageNum);
             return node.pointers.getFirst();
         }
@@ -111,6 +137,7 @@ public class BPTree {
         }
         if (root == null) {
             int pageNum = catalog.requestNewIndexPageNum();
+            catalog.setIndexHead(tableId, pageNum);
             root = BPPointer.node(pageNum);
             BPNode node = new BPNode(tableId, pageNum, new ArrayList<>(), new ArrayList<>(), entryType, true);
             node.values.add(valueToInsert);
@@ -254,9 +281,117 @@ public class BPTree {
         }
     }
 
-    public boolean remove(Object valueToRemove, BPPointer ptrToInsert) {
+    public void update(Object start, Predicate<BPPointer> predicate, UnaryOperator<BPPointer> operator) {
+        BPNode node = searchNode(start);
+        if (node == null) {
+            throw new IllegalArgumentException("Could not find node containing pointer to start");
+        }
+        boolean first = true;
+        int startPos = node.values.indexOf(start) + 1;
+        if (node.pointers.get(0).isNull()) {
+            startPos++;
+        }
+        outer:
+        while (true) {
+            for (int i = startPos; i < node.pointers.size(); i++) {
+                if (first) {
+                    first = false;
+                    startPos = 0;
+                }
+                var ptr = node.pointers.get(i);
+                if (ptr.isNull()) {
+                    continue;
+                }
+                if (ptr.isNode()) {
+                    node = getNode(ptr.pageNum);
+                    continue outer;
+                }
+                if (ptr.isTable() && predicate.test(ptr)) {
+                    node.pointers.set(i, operator.apply(ptr));
+                }
+            }
+            return;
+        }
+    }
 
-        return false;
+    private BPNode searchNode(Object valueToFind) {
+        if (root == null) {
+            root = BPPointer.node(catalog.getIndexHead(tableId));
+        }
+        BPNode node = getNode(root.pageNum);
+        while (node.isInternal()) {
+            int index = node.findLEq(valueToFind);
+            BPPointer pointer;
+            if (index < 0) {
+                // the value was not <= anything, so take the last node
+                pointer = node.pointers.getLast();
+            } else {
+                if (node.values.get(index).equals(valueToFind)) {
+                    // are equal, use the index as-is
+                    pointer = node.pointers.get(index);
+                } else {
+                    // must be <, so get the pointer before it
+                    pointer = node.pointers.get(Math.max(0, index - 1));
+                }
+            }
+            node = getNode(pointer.pageNum);
+        }
+
+        int index = node.values.indexOf(valueToFind);
+        if (index < 0) {
+            // not found
+
+            // hack to get around search keys not actually having all values strictly <= to them on the left
+            // due to how node splitting works
+            BPPointer pointer = node.pointers.getLast();
+            if (pointer.isNull()) {
+                index = node.findLEq(valueToFind);
+                return node;
+            }
+            if (pointer.isNode()) {
+                BPNode nextNode = getNode(pointer.pageNum);
+                index = nextNode.values.indexOf(valueToFind);
+                if (index < 0) {
+                    return node;
+                }
+                node = nextNode;
+            } else {
+                index = node.findLEq(valueToFind);
+                if (index < 0) {
+                    index = node.values.size();
+                }
+            }
+        }
+
+        BPPointer pointer;
+        if (index + 1 < node.pointers.size()) {
+            pointer = node.pointers.get(index + 1);
+        } else {
+            pointer = node.pointers.get(index);
+        }
+        if (pointer.isNode()) {
+            // found a pointer to the right, get the first value there instead
+            return getNode(pointer.pageNum);
+        }
+        return node;
+    }
+
+    public boolean drop() {
+        return storageManager.deleteIndex(tableId);
+    }
+
+    private void gatherAllPointers(List<BPPointer> list, BPPointer nodePtr) {
+        BPNode node = getNode(nodePtr.pageNum);
+        list.add(nodePtr);
+        for (BPPointer ptr : node.pointers) {
+            if (ptr.isNull() || ptr.isTable()) {
+                continue;
+            }
+            list.add(ptr);
+            if (ptr.isNode()) {
+                gatherAllPointers(list, ptr);
+            }
+        }
     }
 
     private BPNode getNode(int pageNum) {
