@@ -153,10 +153,9 @@ public class Catalog {
             encodedPages.put(id, encoded);
             size += encoded.capacity();
         }
+
         // index
-        if (indexMode) {
-            size += 4 * tables.size(); // 1 pageNum (int, 4) per table
-        }
+        size += 4 * tables.size(); // 1 pageNum (int, 4) per table
 
         ByteBuffer buf = ByteBuffer.allocate(size);
         buf.putInt(pageSize);
@@ -170,7 +169,11 @@ public class Catalog {
             buf.put(tableName.getBytes());
             buf.put(encodedCodecs.get(tableId));
             buf.put(encodedPages.get(tableId));
-            buf.putInt(indexByTableId.get(tableId));
+            if (indexByTableId.get(tableId) != null) {
+                buf.putInt(indexByTableId.get(tableId));
+            } else {
+                buf.putInt(-1);
+            }
         }
 
         if (buf.position() != buf.capacity()) {
@@ -203,7 +206,10 @@ public class Catalog {
             if (!pages.isEmpty()) {
                 catalog.pages.put(tableId, pages);
             }
-            catalog.indexByTableId.put(tableId, buf.getInt());
+            int indextableId = buf.getInt();
+            if (indextableId != -1) {
+                catalog.indexByTableId.put(tableId, indextableId);
+            }
         }
         return catalog;
     }
